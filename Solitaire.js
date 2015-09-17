@@ -18,7 +18,7 @@ window.onload = function init()
     //  Configure WebGL
     //
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 0.0, 1.0, 0.0, 1.0 );
+    gl.clearColor( 0.165, 0.714, 0.043, 1.0 );
     
     //  Load shaders and initialize attribute buffers
     
@@ -29,7 +29,7 @@ window.onload = function init()
     
     var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(cards), gl.STATIC_DRAW );
 
     // Associate out shader variables with our data buffer
     
