@@ -6,6 +6,18 @@ var vColor;
 
 // Empyt array/matrix that will hold all the cards in the game.
 var cards = [];
+var positions1 = [
+    vec4( -0.5, 0.5 )
+];
+var positions2 = [
+    vec4( 0.5, 0.5 )
+];
+var positions3 = [
+    vec4( -0.5, -0.5 )
+];
+var positions4 = [
+    vec4( 0.5, -0.5 )
+];
 
 window.onload = function init()
 {
@@ -41,8 +53,25 @@ window.onload = function init()
     gl.vertexAttribPointer( vColor, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
 
+    initCards();
+
     render();
 };
+
+function initCards()
+{
+    var cardTexture = gl.createTexture();
+    cardImage = new Image();
+    cardImage.onLoad = function() { handleTextureLoading( cardImage, cardTexture ); };
+    cardImage.src = "img/acespades.png";
+    cards[ 0 ] = {
+        card: 1,
+        texture: cardTexture,
+        image: cardImage,
+        color: 0,
+        vertices: vec4( positions1[0], positions2[0], positions3[0], positions4[0] )
+    };
+}
 
 
 function render() {
