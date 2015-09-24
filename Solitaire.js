@@ -4,20 +4,15 @@ var gl;
 var vPosition;
 var vColor;
 
-// Empyt array/matrix that will hold all the cards in the game.
-var cards = [];
-var positions1 = [
-    vec4( -0.5, 0.5 )
-];
-var positions2 = [
-    vec4( 0.5, 0.5 )
-];
-var positions3 = [
-    vec4( -0.5, -0.5 )
-];
-var positions4 = [
-    vec4( 0.5, -0.5 )
-];
+// Empty array/matrix that will hold all the cards in the game.
+var cards = new Array( 52 );
+
+// Holds the array position for cards that need to be updated 
+// on call to render();
+// Starts with all cards in the cards array.
+var cardsToUpdate = new Array( 52 );
+var positionsX = new Array( 52 * 4 );
+var positionsY = new Array( 52 * 4 );
 
 window.onload = function init()
 {
@@ -60,21 +55,23 @@ window.onload = function init()
 
 function initCards()
 {
-    var cardTexture = gl.createTexture();
-    cardImage = new Image();
-    cardImage.onLoad = function() { handleTextureLoading( cardImage, cardTexture ); };
-    cardImage.src = "img/acespades.png";
     cards[ 0 ] = {
-        card: 1,
-        texture: cardTexture,
-        image: cardImage,
-        color: 0,
-        vertices: vec4( positions1[0], positions2[0], positions3[0], positions4[0] )
+        name: "acespades",
+        positionsX: [0, 1, 2, 3],
+        positionsY: [0, 1, 2, 3],
+        color: vec4( 1.0, 0.0, 0.0, 1.0 );
     };
+
+    cardsToUpdate[ 0 ] = 0;
 }
 
 
-function render() {
+function render() 
+{
     gl.clear( gl.COLOR_BUFFER_BIT );
-    gl.drawArrays( gl.POINTS, 0, cards.length );
+    for ( var i = 0; i < cardsToUpdate.length; i++ )
+    {
+        //update cards to update
+        gl.drawArrays( gl.TRIANGLE_STRIP, 0, vertices.length );
+    }
 }
