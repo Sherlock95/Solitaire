@@ -10,9 +10,13 @@ var cards = new Array( 52 );
 // Holds the array position for cards that need to be updated 
 // on call to render();
 // Starts with all cards in the cards array.
-var cardsToUpdate = new Array( 52 );
-var positionsX = new Array( 52 * 4 );
-var positionsY = new Array( 52 * 4 );
+var cardsToUpdate = [];
+var cardOriginX = new Array( 52 );
+var cardOriginY = new Array( 52 );
+var cardTextures = new Array( 52 );
+var clickableCards = [];
+var CARD_WIDTH = 75;
+var CARD_HEIGHT = 105;
 
 window.onload = function init()
 {
@@ -36,7 +40,6 @@ window.onload = function init()
     
     var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(cards), gl.STATIC_DRAW );
 
     // Associate out shader variables with our data buffer
     
@@ -48,6 +51,9 @@ window.onload = function init()
     gl.vertexAttribPointer( vColor, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
 
+    var resolutionLocation = gl.getUniformLocation( program, "uResolution" );
+    gl.uniform2f( resolutionLocation, canvas.width, canvas.height );
+
     initCards();
 
     render();
@@ -57,12 +63,15 @@ function initCards()
 {
     cards[ 0 ] = {
         name: "acespades",
-        positionsX: [0, 1, 2, 3],
-        positionsY: [0, 1, 2, 3],
-        color: vec4( 1.0, 0.0, 0.0, 1.0 );
+        id: 0
     };
 
-    cardsToUpdate[ 0 ] = 0;
+    cardOriginX[ cards[ 0 ].id ] = ( canvas.width / 2 ) - ( CARD_WIDTH / 2 );
+    cardOriginY[ cards[ 0 ].id ] = ( canvas.height / 2 ) - ( CARD_HEIGHT / 2 ); 
+    cardTextures[ cards[ 0 ].id ] = vec4( 1.0, 0.0, 0.0, 1.0 );
+
+    cardsToUpdate.push( 0 );
+    clickableCards.push( 0 );
 }
 
 
@@ -71,6 +80,22 @@ function render()
     gl.clear( gl.COLOR_BUFFER_BIT );
     for ( var i = 0; i < cardsToUpdate.length; i++ )
     {
+        var card = cardsToUpdate.pop();
+        var x1 = cardOriginX[ card ];
+        var x2 = cardOriginX[ card ] + CARD_WIDTH;
+        var y1 = cardOriginY[ card ];
+        var y2 = cardOriginY[ card ] + CARD_HEIGHT;
+        var vertices = [
+            vec2( x1, y1 ),
+            vec2( x2, y1 ),
+            vec2( x1, y2 ),
+            vec2( x2, y2 )
+        ];
+        
+        gl.uniform4f( vColor, cardTextures[ card ].x, cardTextures[ card ].y, cardTextures[ card ].z, cardTextures[ card ].w  );
+        
+        gl.bufferData( gl.ARRAY_BUFFER, flatten( vertices ), gl.STATIC_DRAW );
+
         //update cards to update
         gl.drawArrays( gl.TRIANGLE_STRIP, 0, vertices.length );
     }

@@ -7,16 +7,20 @@
             attribute vec2 vPosition;
             attribute vec4 vColor;
 
+            uniform vec2 uResolution;
+
             varying vec4 fColor;
 
             void
             main()
             {
-                gl_PointSize = 1.0;
-                gl_Position.x = vPosition.x;
-                gl_Position.y = vPosition.y;
-                gl_Position.z = 0;
-                gl_Position.w = 1;
+                vec2 zeroToOne = vPosition / uResolution;
+                vec2 zeroToTwo = zeroToOne * 2.0;
+                vec2 clipspace = zeroToTwo - 1.0;
+                gl_Position.x = clipspace.x;
+                gl_Position.y = clipspace.y;
+                gl_Position.z = 0.0;
+                gl_Position.w = 1.0;
                 
                 fColor = vColor;
             }
