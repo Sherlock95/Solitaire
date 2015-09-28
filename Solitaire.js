@@ -3,9 +3,14 @@ var gl;
 
 var vPosition;
 var vColor;
+var imageLoc;
+
+// Arrays to hold names for card generation
+var cardNum = [ "ace", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king" ];
+var cardType = [ "spades", "hearts", "clubs", "diamonds" ];
 
 // Empty array/matrix that will hold all the cards in the game.
-var cards = new Array( 52 );
+var cards = [];
 
 // Holds the array position for cards that need to be updated 
 // on call to render();
@@ -13,7 +18,7 @@ var cards = new Array( 52 );
 var cardsToUpdate = [];
 var cardOriginX = new Array( 52 );
 var cardOriginY = new Array( 52 );
-var cardTextures = new Array( 52 );
+var cardImages = [];
 var clickableCards = [];
 var CARD_WIDTH = 75;
 var CARD_HEIGHT = 105;
@@ -43,13 +48,12 @@ window.onload = function init()
 
     // Associate out shader variables with our data buffer
     
-    var vPosition = gl.getAttribLocation( program, "vPosition" );
+    vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
 
-    var vColor = gl.getAttribLocation( program, "vColor" );
-    gl.vertexAttribPointer( vColor, 2, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vColor );
+    imageLoc = gl.getUniformLocation( program, "image" );
+    gl.uniform1i( imageLoc, 0 );
 
     var resolutionLocation = gl.getUniformLocation( program, "uResolution" );
     gl.uniform2f( resolutionLocation, canvas.width, canvas.height );
@@ -69,18 +73,9 @@ function initCards()
     cardOriginX[ cards[ 0 ].id ] = ( canvas.width / 2 ) - ( CARD_WIDTH / 2 );
     cardOriginY[ cards[ 0 ].id ] = ( canvas.height / 2 ) - ( CARD_HEIGHT / 2 ); 
     
-    var cardImage = new Image();
-    cardImage.src = "img/" + cards[ 0 ].name + ".png";
-    cardImage.onload = function() {
-        loadImage();
-    }
-
-    cardTextures[ cards[ 0 ].id ] = cardImage;
-
     cardsToUpdate.push( 0 );
     clickableCards.push( 0 );
 }
-
 
 function render() 
 {
@@ -99,28 +94,24 @@ function render()
             vec2( x2, y2 )
         ];
         
-        gl.uniform4f( vColor, cardTextures[ card ].x, cardTextures[ card ].y, cardTextures[ card ].z, cardTextures[ card ].w  );
-
         gl.bufferData( gl.ARRAY_BUFFER, flatten( vertices ), gl.STATIC_DRAW );
+
+        var tex = gl.createTexture();
+        gl.bindTexture( gl.TEXTURE_2D, tex );
+        gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array( [ 255, 0, 0, 255 ] ) );
+
+        var img = new Image();
+        img.src = "img/" + cards[ card ].name + ".png";
+        img.onload = function() {
+            gl.bindTexture( gl.TEXTURE_2D, tex );
+            gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        };
 
         //update cards to update
         gl.drawArrays( gl.TRIANGLE_STRIP, 0, vertices.length );
     }
-}
-
-function loadImage() {
-        var cardTexture = gl.createTexture();
-
-        gl.bindTexture( gl.TEXTURE_2D, cardTexture );
-
-        gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cardTextures[ card ] );
-        
-        // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        // Prevents s-coordinate wrapping (repeating).
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        // Prevents t-coordinate wrapping (repeating).
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);;
-
-        gl.bindTexture( gl.TEXTURE_2D, null );
 }
