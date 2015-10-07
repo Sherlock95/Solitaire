@@ -6,6 +6,8 @@ window.onload = function init()
     var vPosition;
     var vColor;
     var program;
+    var verticesBuffer;
+    var perspectiveMatrix;
 
     // Empyt array/matrix that will hold all the cards in the game.
     var cards = new Array( 52 );
@@ -26,11 +28,23 @@ window.onload = function init()
     }
 
     initShaders();
+    initBuffers();
 
     render();
 
     function render() 
     {
+        gl.clear( gl.COLOR_BUFFER_BIT );
+
+        perspectiveMatrix = makePerspective( 45, canvas.width/canvas.height, 0.1, 100.0 );
+
+        loadIdentity();
+        mvTranslate( [ -0.0, 0.0, -6.0 ] );
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, squareVerticesBuffer);
+        gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        setMatrixUniforms();
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
 
     function initWebGL( canvas ) 
@@ -66,10 +80,27 @@ window.onload = function init()
 
         vPosition = gl.getAttribLocation( shaderProgram, "vPosition" );
         gl.enableVertexAttribArray( vPosition );
+
         vColor = gl.getAttribLocation( shaderProgram, "vColor" );
         gl.enableVertexAttribArray( vColor );
+
         u_resolution = gl.getAttribLocation( shaderProgram, "u_resolution" );
         gl.enableVertexAttribArray( u_resolution );
+        gl.uniform2f( u_resolution, canvas.width, canvas.height );
+    }
+
+    funciton initBuffers() {
+        verticesBuffer = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+
+        var vertices = [
+            1.0, 1.0, 0.0,
+            -1.0, 1.0, 0.0,
+            1.0, -1.0, 0.0,
+            -1.0, -1.0, 0.0
+        ];
+
+        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( verticesBuffer ), gl.STATIC_DRAW );
     }
 
     function getShader( gl, id )

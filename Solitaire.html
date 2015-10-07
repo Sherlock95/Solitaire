@@ -5,24 +5,30 @@
 <title>2D Sierpinski Gasket</title>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
-attribute vec2 vPosition;
-attribute vec2 vColor;
+attribute vec4 vColor;
+attribute vec3 vPosition;
 attribute vec2 u_resolution;
+
+uniform mat4 uMVMatrix;
+uniform mat4 uPMatrix;
 
 varying vec4 fColor;
 
 void
 main()
 {
-    vec2 zeroToOne = vPosition / u_resolution;
-    vec2 zeroToTwo = zeroToOne * 2.0;
-    vec2 clipspace = zeroToTwo - 1.0;
+    vec3 zeroToOne = vec3( vPosition.x / u_resolution.x, 
+                           vPosition.y / u_resolution.y, 
+                           vPosition.z );
+    vec4 zeroToTwo = vec3( zeroToOne.x * 2.0,
+                           zeroToOne.y * 2.0,
+                           zeroToOne.z );
+    vec4 clipspace = vec3( zeroToTwo.x - 1.0,
+                           zeroToTwo.y - 1.0,
+                           zeroToTwo.z );
 	gl_PointSize = 1.0;
-    gl_Position.x = clipspace.x;
-    gl_Position.y = clipspace.y;
-    gl_Position.z = 0;
-    gl_Position.w = 1;
-    
+    gl_Position = uPMatrix * uMVMatrix * vec4( clipspace, 1.0 );
+
     fColor = vColor;
 }
 </script>
