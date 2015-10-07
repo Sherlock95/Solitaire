@@ -9,21 +9,14 @@ window.onload = function init()
     var verticesBuffer;
     var perspectiveMatrix;
 
-    // Empyt array/matrix that will hold all the cards in the game.
-    var cards = new Array( 52 );
-    var textures = new Array( 53 );
-    var positionsX = new Array( 52 * 4 );
-    var positionsY = new Array( 52 * 4 );
-    var positionsZ = new Array( 52 * 4 );
-
     canvas = document.getElementById( "gl-canvas" );
 
     var gl = initWebGL( canvas );
 
     if ( gl ) {
         gl.clearColor( 0.165, 0.714, 0.043, 1.0 );
-        gl.enable( DEPTH_TEST );
-        gl.clear( gl.COLOR_BUFFER_BIT );
+        gl.enable( gl.DEPTH_TEST );
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
         gl.viewport( 0, 0, canvas.width, canvas.height );
     }
 
@@ -34,15 +27,15 @@ window.onload = function init()
 
     function render() 
     {
-        gl.clear( gl.COLOR_BUFFER_BIT );
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
         perspectiveMatrix = makePerspective( 45, canvas.width/canvas.height, 0.1, 100.0 );
 
         loadIdentity();
         mvTranslate( [ -0.0, 0.0, -6.0 ] );
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, squareVerticesBuffer);
-        gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+        gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
         setMatrixUniforms();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
@@ -70,7 +63,7 @@ window.onload = function init()
         gl.attachShader( shaderProgram, vertexShader );
         gl.attachShader( shaderProgram, fragmentShader );
         gl.linkProgram( shaderProgram );
-        
+
         if ( !gl.getProgramParameter( shaderProgram, gl.LINK_STATUS ) )
         {
             alert( "Unable to initialize the shader program." );
@@ -80,16 +73,9 @@ window.onload = function init()
 
         vPosition = gl.getAttribLocation( shaderProgram, "vPosition" );
         gl.enableVertexAttribArray( vPosition );
-
-        vColor = gl.getAttribLocation( shaderProgram, "vColor" );
-        gl.enableVertexAttribArray( vColor );
-
-        u_resolution = gl.getAttribLocation( shaderProgram, "u_resolution" );
-        gl.enableVertexAttribArray( u_resolution );
-        gl.uniform2f( u_resolution, canvas.width, canvas.height );
     }
 
-    funciton initBuffers() {
+    function initBuffers() {
         verticesBuffer = gl.createBuffer();
         gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
 
@@ -97,10 +83,9 @@ window.onload = function init()
             1.0, 1.0, 0.0,
             -1.0, 1.0, 0.0,
             1.0, -1.0, 0.0,
-            -1.0, -1.0, 0.0
-        ];
+            -1.0, -1.0, 0.0 ];
 
-        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( verticesBuffer ), gl.STATIC_DRAW );
+        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( vertices ), gl.STATIC_DRAW );
     }
 
     function getShader( gl, id )
@@ -152,5 +137,24 @@ window.onload = function init()
 
         return shader
     }
-};
 
+    function loadIdentity() {
+        mvMatrix = Matrix.I(4);
+    }
+
+    function multMatrix(m) {
+        mvMatrix = mvMatrix.x(m);
+    }
+
+    function mvTranslate(v) {
+        multMatrix(Matrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
+    }
+
+    function setMatrixUniforms() {
+        var pUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+        gl.uniformMatrix4fv(pUniform, false, new Float32Array(perspectiveMatrix.flatten()));
+
+        var mvUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+        gl.uniformMatrix4fv(mvUniform, false, new Float32Array(mvMatrix.flatten()));
+    }
+};

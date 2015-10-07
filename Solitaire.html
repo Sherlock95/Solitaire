@@ -5,49 +5,33 @@
 <title>2D Sierpinski Gasket</title>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
-attribute vec4 vColor;
 attribute vec3 vPosition;
-attribute vec2 u_resolution;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 
-varying vec4 fColor;
-
 void
 main()
 {
-    vec3 zeroToOne = vec3( vPosition.x / u_resolution.x, 
-                           vPosition.y / u_resolution.y, 
-                           vPosition.z );
-    vec4 zeroToTwo = vec3( zeroToOne.x * 2.0,
-                           zeroToOne.y * 2.0,
-                           zeroToOne.z );
-    vec4 clipspace = vec3( zeroToTwo.x - 1.0,
-                           zeroToTwo.y - 1.0,
-                           zeroToTwo.z );
-	gl_PointSize = 1.0;
-    gl_Position = uPMatrix * uMVMatrix * vec4( clipspace, 1.0 );
-
-    fColor = vColor;
+    gl_Position = uPMatrix * uMVMatrix * vec4( vPosition, 1.0 );
 }
 </script>
 
 <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
-varying vec4 fColor;
-
 void
 main()
 {
-    gl_FragColor = fColor;
+    gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
 }
 </script>
 
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
 <script type="text/javascript" src="Common/initShaders.js"></script>
 <script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="Common/sylvester.js"></script>
+<script type="text/javascript" src="Common/glUtils.js"></script>
 <script type="text/javascript" src="Solitaire.js"></script>
 </head>
 
