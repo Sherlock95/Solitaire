@@ -7,7 +7,23 @@ window.onload = function init()
     var vColor;
     var program;
     var verticesBuffer;
+    var verticesColorBuffer;
     var perspectiveMatrix;
+
+    var squareRotation = 0.0;
+    var lastSquareUpdateTime;
+
+    var squareXOffset = 0.0;
+    var squareYOffset = 0.0;
+    var squareZOffset = 0.0;
+
+    var xIncValue = 0.2;
+    var yIncValue = -0.4;
+    var zIncValue = 0.3;
+    
+    var drag = false;
+
+    var oldX, oldY;
 
     canvas = document.getElementById( "gl-canvas" );
 
@@ -23,7 +39,7 @@ window.onload = function init()
     initShaders();
     initBuffers();
 
-    render();
+    setInterval( render, 15 );
 
     function render() 
     {
@@ -34,10 +50,39 @@ window.onload = function init()
         loadIdentity();
         mvTranslate( [ -0.0, 0.0, -6.0 ] );
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-        gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
+        mvPushMatrix();
+        mvRotate( squareRotation, [1, 0, 1] );
+        mvTranslate( [ squareXOffset, squareYOffset, squareZOffset ] );
+
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+        gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
+        gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
+
         setMatrixUniforms();
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+        gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+
+        mvPopMatrix();
+
+        var currentTime = Date.now();
+        
+        if ( lastSquareUpdateTime)
+        {
+            var delta = currentTime - lastSquareUpdateTime;
+
+            squareRotation = ( squareRotation == 360 ) ? 0.0 : squareRotation + ( ( 30 * delta ) / 1000.0 );
+            squareXOffset += xIncValue * ( ( 30 * delta ) / 1000.0 );
+            squareYOffset += yIncValue * ( ( 30 * delta ) / 1000.0 );
+            squareZOffset += zIncValue * ( ( 30 * delta ) / 1000.0 );
+
+            if ( Math.abs(sqareYOffset ) > 2.5 ) {
+                xIncValue = -xIncValue;
+                yIncValue = -yIncValue;
+                zIncValue = -zIncValue;
+            }
+        }
+
+        lastSquareUpdateTime = currentTime;
     }
 
     function initWebGL( canvas ) 
@@ -73,6 +118,9 @@ window.onload = function init()
 
         vPosition = gl.getAttribLocation( shaderProgram, "vPosition" );
         gl.enableVertexAttribArray( vPosition );
+
+        vColor = gl.getAttribLocation( shaderProgram, "vColor" );
+        gl.enableVertexAttribArray( vColor );
     }
 
     function initBuffers() {
@@ -86,6 +134,16 @@ window.onload = function init()
             -1.0, -1.0, 0.0 ];
 
         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( vertices ), gl.STATIC_DRAW );
+
+        var colors = [
+            1.0, 1.0, 1.0, 1.0,
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0 ];
+
+        verticesColorBuffer = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
+        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( colors ), gl.STATIC_DRAW );
     }
 
     function getShader( gl, id )
@@ -136,6 +194,42 @@ window.onload = function init()
         }
 
         return shader
+    }
+
+    function mouseDown( e ) {
+        drag = true;
+
+        old_x = e.pageX;
+        old_y = e.pageY;
+        e.preventDefault();
+        return false;
+    }
+
+    var mvMatrixStack = [];
+
+    function mvPushMatrix(m) {
+        if (m) {
+            mvMatrixStack.push(m.dup());
+            mvMatrix = m.dup();
+        } else {
+            mvMatrixStack.push(mvMatrix.dup());
+        }
+    }
+
+    function mvPopMatrix() {
+        if (!mvMatrixStack.length) {
+            throw("Can't pop from an empty matrix stack.");
+        }
+
+        mvMatrix = mvMatrixStack.pop();
+        return mvMatrix;
+    }
+
+    function mvRotate(angle, v) {
+        var inRadians = angle * Math.PI / 180.0;
+
+        var m = Matrix.Rotation(inRadians, $V([v[0], v[1], v[2]])).ensure4x4();
+        multMatrix(m);
     }
 
     function loadIdentity() {
