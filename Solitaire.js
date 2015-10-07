@@ -25,6 +25,8 @@ window.onload = function init()
 
     var oldX, oldY;
 
+    var vertices;
+
     canvas = document.getElementById( "gl-canvas" );
 
     var gl = initWebGL( canvas );
@@ -66,22 +68,6 @@ window.onload = function init()
 
         var currentTime = Date.now();
         
-        if ( lastSquareUpdateTime)
-        {
-            var delta = currentTime - lastSquareUpdateTime;
-
-            squareRotation = ( squareRotation == 360 ) ? 0.0 : squareRotation + ( ( 30 * delta ) / 1000.0 );
-            squareXOffset += xIncValue * ( ( 30 * delta ) / 1000.0 );
-            squareYOffset += yIncValue * ( ( 30 * delta ) / 1000.0 );
-            squareZOffset += zIncValue * ( ( 30 * delta ) / 1000.0 );
-
-            if ( Math.abs(sqareYOffset ) > 2.5 ) {
-                xIncValue = -xIncValue;
-                yIncValue = -yIncValue;
-                zIncValue = -zIncValue;
-            }
-        }
-
         lastSquareUpdateTime = currentTime;
     }
 
@@ -127,7 +113,7 @@ window.onload = function init()
         verticesBuffer = gl.createBuffer();
         gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
 
-        var vertices = [
+        vertices = [
             1.0, 1.0, 0.0,
             -1.0, 1.0, 0.0,
             1.0, -1.0, 0.0,
