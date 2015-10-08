@@ -10,20 +10,14 @@ window.onload = function init()
     var verticesColorBuffer;
     var perspectiveMatrix;
 
-    var squareRotation = 0.0;
     var lastSquareUpdateTime;
 
-    var squareXOffset = 0.0;
-    var squareYOffset = 0.0;
-    var squareZOffset = 0.0;
-
-    var xIncValue = 0.2;
-    var yIncValue = -0.4;
-    var zIncValue = 0.3;
-    
     var drag = false;
+    var selected = false;
 
     var oldX, oldY;
+    var deltaX = 0;
+    var deltaY = 0;
 
     var vertices;
 
@@ -53,8 +47,7 @@ window.onload = function init()
         mvTranslate( [ -0.0, 0.0, -6.0 ] );
 
         mvPushMatrix();
-        mvRotate( squareRotation, [1, 0, 1] );
-        mvTranslate( [ squareXOffset, squareYOffset, squareZOffset ] );
+        mvTranslate( [ deltaX, deltaY, 0 ] );
 
         gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
         gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
@@ -65,10 +58,6 @@ window.onload = function init()
         gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
 
         mvPopMatrix();
-
-        var currentTime = Date.now();
-        
-        lastSquareUpdateTime = currentTime;
     }
 
     function initWebGL( canvas ) 
@@ -81,6 +70,10 @@ window.onload = function init()
         {
             alert( "Unable to initialize webgl." );
         }
+
+        canvas.addEventListener( "mousedown", mouseDown, false );
+        canvas.addEventListener( "mouseup", mouseUp, false );
+        canvas.addEventListener( "mousemove", mouseMove, false );
 
         return gl;
     }
@@ -182,13 +175,38 @@ window.onload = function init()
         return shader
     }
 
-    function mouseDown( e ) {
+    function mouseDown( e ) 
+    {
         drag = true;
 
-        old_x = e.pageX;
-        old_y = e.pageY;
+        oldX = e.clientX;
+        oldY = e.clientY;
+        
+        document.getElementById( "debug" ).text = "drag = " + drag + " selected = " + selected;
+
         e.preventDefault();
-        return false;
+    }
+
+    function mouseUp( e )
+    {
+        drag = false;
+        e.preventDefault();
+    }
+
+    function mouseMove( e ) 
+    {
+        if ( !drag )
+        {
+            return;
+        }
+
+        var newX = e.clientX;
+        var newY = e.clientY;
+
+        deltaX = newX - oldX;
+        deltaY = newY - oldY;
+
+        e.preventDefault();
     }
 
     var mvMatrixStack = [];
