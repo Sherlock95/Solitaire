@@ -1,26 +1,26 @@
+var canvas;
+var gl;
+
+var vPosition;
+var vColor;
+var program;
+var verticesBuffer;
+var verticesColorBuffer;
+var perspectiveMatrix;
+
+var lastSquareUpdateTime;
+
+var drag = false;
+var selected = false;
+
+var oldX, oldY;
+var deltaX = 0;
+var deltaY = 0;
+
+var vertices;
+
 window.onload = function init()
 {
-    var canvas;
-    var gl;
-
-    var vPosition;
-    var vColor;
-    var program;
-    var verticesBuffer;
-    var verticesColorBuffer;
-    var perspectiveMatrix;
-
-    var lastSquareUpdateTime;
-
-    var drag = false;
-    var selected = false;
-
-    var oldX, oldY;
-    var deltaX = 0;
-    var deltaY = 0;
-
-    var vertices;
-
     canvas = document.getElementById( "gl-canvas" );
 
     var gl = initWebGL( canvas );
@@ -179,8 +179,8 @@ window.onload = function init()
     {
         drag = true;
 
-        oldX = e.clientX;
-        oldY = e.clientY;
+        oldX = 5 / ( canvas.width / e.clientX );
+        oldY = -5 / ( canvas.height / e.clientY );
         
         document.getElementById( "debug" ).text = "drag = " + drag + " selected = " + selected;
 
@@ -200,8 +200,8 @@ window.onload = function init()
             return;
         }
 
-        var newX = e.clientX;
-        var newY = e.clientY;
+        var newX = 5 / ( canvas.width / e.clientX );
+        var newY = -5 / ( canvas.height / e.clientY );
 
         deltaX = newX - oldX;
         deltaY = newY - oldY;
