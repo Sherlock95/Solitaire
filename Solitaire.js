@@ -175,14 +175,14 @@ window.onload = function init()
         return shader
     }
 
+    // mouse goes from 0, 0 in top left corner to
+    // canvas.widht, canvas.height in bottom right.
     function mouseDown( e ) 
     {
         drag = true;
 
-        oldX = 5 / ( canvas.width / e.clientX );
-        oldY = -5 / ( canvas.height / e.clientY );
-        
-        document.getElementById( "debug" ).text = "drag = " + drag + " selected = " + selected;
+        oldX = e.clientX;
+        oldY = e.clientY;
 
         e.preventDefault();
     }
@@ -200,8 +200,8 @@ window.onload = function init()
             return;
         }
 
-        var newX = 5 / ( canvas.width / e.clientX );
-        var newY = -5 / ( canvas.height / e.clientY );
+        var newX = e.clientX;
+        var newY = e.clientY;
 
         deltaX = newX - oldX;
         deltaY = newY - oldY;
