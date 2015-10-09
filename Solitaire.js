@@ -3,115 +3,256 @@ var gl;
 
 var vPosition;
 var vColor;
-var imageLoc;
+var program;
+var verticesBuffer;
+var verticesColorBuffer;
+var perspectiveMatrix;
 
-// Arrays to hold names for card generation
-var cardNum = [ "ace", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king" ];
-var cardType = [ "spades", "hearts", "clubs", "diamonds" ];
+var lastSquareUpdateTime;
 
-// Empty array/matrix that will hold all the cards in the game.
-var cards = [];
+var drag = false;
+var selected = false;
 
-// Holds the array position for cards that need to be updated 
-// on call to render();
-// Starts with all cards in the cards array.
-var cardsToUpdate = [];
-var cardOriginX = new Array( 52 );
-var cardOriginY = new Array( 52 );
-var cardImages = [];
-var clickableCards = [];
-var CARD_WIDTH = 75;
-var CARD_HEIGHT = 105;
+var oldX, oldY;
+var deltaX = 0;
+var deltaY = 0;
+
+var vertices;
 
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
-    
-    gl = WebGLUtils.setupWebGL( canvas );
-    if ( !gl ) { alert( "WebGL isn't available" ); }
 
-    //
-    //  Configure WebGL
-    //
-    gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 0.165, 0.714, 0.043, 1.0 );
-    
-    //  Load shaders and initialize attribute buffers
-    
-    var program = initShaders( gl, "vertex-shader", "fragment-shader" );
-    gl.useProgram( program );
-    
-    // Load the data into the GPU
-    
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
+    var gl = initWebGL( canvas );
 
-    // Associate out shader variables with our data buffer
-    
-    vPosition = gl.getAttribLocation( program, "vPosition" );
-    gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vPosition );
-
-    imageLoc = gl.getUniformLocation( program, "image" );
-    gl.uniform1i( imageLoc, 0 );
-
-    var resolutionLocation = gl.getUniformLocation( program, "uResolution" );
-    gl.uniform2f( resolutionLocation, canvas.width, canvas.height );
-
-    initCards();
-
-    render();
-};
-
-function initCards()
-{
-    cards[ 0 ] = {
-        name: "acespades",
-        id: 0
-    };
-
-    cardOriginX[ cards[ 0 ].id ] = ( canvas.width / 2 ) - ( CARD_WIDTH / 2 );
-    cardOriginY[ cards[ 0 ].id ] = ( canvas.height / 2 ) - ( CARD_HEIGHT / 2 ); 
-    
-    cardsToUpdate.push( 0 );
-    clickableCards.push( 0 );
-}
-
-function render() 
-{
-    gl.clear( gl.COLOR_BUFFER_BIT );
-    for ( var i = 0; i < cardsToUpdate.length; i++ )
-    {
-        var card = cardsToUpdate.pop();
-        var x1 = cardOriginX[ card ];
-        var x2 = cardOriginX[ card ] + CARD_WIDTH;
-        var y1 = cardOriginY[ card ];
-        var y2 = cardOriginY[ card ] + CARD_HEIGHT;
-        var vertices = [
-            vec2( x1, y1 ),
-            vec2( x2, y1 ),
-            vec2( x1, y2 ),
-            vec2( x2, y2 )
-        ];
-        
-        gl.bufferData( gl.ARRAY_BUFFER, flatten( vertices ), gl.STATIC_DRAW );
-
-        var tex = gl.createTexture();
-        gl.bindTexture( gl.TEXTURE_2D, tex );
-        gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array( [ 255, 0, 0, 255 ] ) );
-
-        var img = new Image();
-        img.src = "img/" + cards[ card ].name + ".png";
-        img.onload = function() {
-            gl.bindTexture( gl.TEXTURE_2D, tex );
-            gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        };
-
-        //update cards to update
-        gl.drawArrays( gl.TRIANGLE_STRIP, 0, vertices.length );
+    if ( gl ) {
+        gl.clearColor( 0.165, 0.714, 0.043, 1.0 );
+        gl.enable( gl.DEPTH_TEST );
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+        gl.viewport( 0, 0, canvas.width, canvas.height );
     }
-}
+
+    initShaders();
+    initBuffers();
+
+    setInterval( render, 15 );
+
+    function render() 
+    {
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
+        perspectiveMatrix = makePerspective( 45, canvas.width/canvas.height, 0.1, 100.0 );
+
+        loadIdentity();
+        mvTranslate( [ -0.0, 0.0, -6.0 ] );
+
+        mvPushMatrix();
+        mvTranslate( [ deltaX, deltaY, 0 ] );
+
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+        gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
+        gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
+
+        setMatrixUniforms();
+        gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+
+        mvPopMatrix();
+    }
+
+    function initWebGL( canvas ) 
+    {
+        gl = null;
+
+        gl = canvas.getContext( "webgl" );
+
+        if ( !gl ) 
+        {
+            alert( "Unable to initialize webgl." );
+        }
+
+        canvas.addEventListener( "mousedown", mouseDown, false );
+        canvas.addEventListener( "mouseup", mouseUp, false );
+        canvas.addEventListener( "mousemove", mouseMove, false );
+
+        return gl;
+    }
+
+    function initShaders()
+    {
+        var vertexShader = getShader( gl, "vertex-shader" );
+        var fragmentShader = getShader( gl, "fragment-shader" );
+
+        shaderProgram = gl.createProgram();
+        gl.attachShader( shaderProgram, vertexShader );
+        gl.attachShader( shaderProgram, fragmentShader );
+        gl.linkProgram( shaderProgram );
+
+        if ( !gl.getProgramParameter( shaderProgram, gl.LINK_STATUS ) )
+        {
+            alert( "Unable to initialize the shader program." );
+        }
+
+        gl.useProgram( shaderProgram );
+
+        vPosition = gl.getAttribLocation( shaderProgram, "vPosition" );
+        gl.enableVertexAttribArray( vPosition );
+
+        vColor = gl.getAttribLocation( shaderProgram, "vColor" );
+        gl.enableVertexAttribArray( vColor );
+    }
+
+    function initBuffers() {
+        verticesBuffer = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+
+        vertices = [
+            1.0, 1.0, 0.0,
+            -1.0, 1.0, 0.0,
+            1.0, -1.0, 0.0,
+            -1.0, -1.0, 0.0 ];
+
+        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( vertices ), gl.STATIC_DRAW );
+
+        var colors = [
+            1.0, 1.0, 1.0, 1.0,
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0 ];
+
+        verticesColorBuffer = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
+        gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( colors ), gl.STATIC_DRAW );
+    }
+
+    function getShader( gl, id )
+    {
+        var shaderScript, theSource, currentChild, shader;
+
+        shaderScript = document.getElementById( id );
+
+        if ( !shaderScript )
+        {
+            return null;
+        }
+
+        theSource = "";
+        currentChild = shaderScript.firstChild;
+
+        while ( currentChild )
+        {
+            if ( currentChild.nodeType == currentChild.TEXT_NODE )
+            {
+                theSource += currentChild.textContent;
+            }
+
+            currentChild = currentChild.nextSibling;
+        }
+
+        if ( shaderScript.type == "x-shader/x-fragment" )
+        {
+            shader = gl.createShader( gl.FRAGMENT_SHADER );
+        }
+        else if ( shaderScript.type == "x-shader/x-vertex" )
+        {
+            shader = gl.createShader( gl.VERTEX_SHADER );
+        }
+        else
+        {
+            return null;
+        }
+
+        gl.shaderSource( shader, theSource );
+
+        gl.compileShader( shader );
+
+        if ( !gl.getShaderParameter( shader, gl.COMPILE_STATUS ) )
+        {
+            alert( "An error occurred while compiling shaders: " + gl.getShaderInfoLog( shader ) );
+            return null;
+        }
+
+        return shader
+    }
+
+    function mouseDown( e ) 
+    {
+        drag = true;
+
+        oldX = 5 / ( canvas.width / e.clientX );
+        oldY = -5 / ( canvas.height / e.clientY );
+        
+        document.getElementById( "debug" ).text = "drag = " + drag + " selected = " + selected;
+
+        e.preventDefault();
+    }
+
+    function mouseUp( e )
+    {
+        drag = false;
+        e.preventDefault();
+    }
+
+    function mouseMove( e ) 
+    {
+        if ( !drag )
+        {
+            return;
+        }
+
+        var newX = 5 / ( canvas.width / e.clientX );
+        var newY = -5 / ( canvas.height / e.clientY );
+
+        deltaX = newX - oldX;
+        deltaY = newY - oldY;
+
+        e.preventDefault();
+    }
+
+    var mvMatrixStack = [];
+
+    function mvPushMatrix(m) {
+        if (m) {
+            mvMatrixStack.push(m.dup());
+            mvMatrix = m.dup();
+        } else {
+            mvMatrixStack.push(mvMatrix.dup());
+        }
+    }
+
+    function mvPopMatrix() {
+        if (!mvMatrixStack.length) {
+            throw("Can't pop from an empty matrix stack.");
+        }
+
+        mvMatrix = mvMatrixStack.pop();
+        return mvMatrix;
+    }
+
+    function mvRotate(angle, v) {
+        var inRadians = angle * Math.PI / 180.0;
+
+        var m = Matrix.Rotation(inRadians, $V([v[0], v[1], v[2]])).ensure4x4();
+        multMatrix(m);
+    }
+
+    function loadIdentity() {
+        mvMatrix = Matrix.I(4);
+    }
+
+    function multMatrix(m) {
+        mvMatrix = mvMatrix.x(m);
+    }
+
+    function mvTranslate(v) {
+        multMatrix(Matrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
+    }
+
+    function setMatrixUniforms() {
+        var pUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+        gl.uniformMatrix4fv(pUniform, false, new Float32Array(perspectiveMatrix.flatten()));
+
+        var mvUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+        gl.uniformMatrix4fv(mvUniform, false, new Float32Array(mvMatrix.flatten()));
+    }
+};
