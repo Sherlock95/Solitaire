@@ -35,6 +35,9 @@ var cardColors = [];
 var CARD_WIDTH = 0.25;
 var CARD_HEIGHT = 0.5;
 
+var point1, point2, point3, point4;
+var tmp1, tmp;
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -76,12 +79,20 @@ window.onload = function init()
 
     function render()
     {
+        gl.clear( gl.COLOR_BUFFER_BIT );
         for ( var i = 0; i < 52; ++i )
         {
-            
+            gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+            tmp1 = [
+                cardVertices[ i ],
+                vec2( cardVertices[ i ][ 0 ] + CARD_WIDTH, cardVertices[ i ][ 1 ] ),
+                vec2( cardVertices[ i ][ 0 ], cardVertices[ i ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ i ][ 0 ] + CARD_WIDTH, cardVertices[ i ][ 1 ] - CARD_HEIGHT )
+            ];
+            gl.bufferSubData( gl.ARRAY_BUFFER, 32 * i, flatten( tmp1 ) );
         }
 
-        gl.drawArrays( gl.TRIANGLE_STRIP, 0, 52 );
+        gl.drawArrays( gl.TRIANGLE_STRIP, 0, 208 );
     }
 
     function mouseDown( e )
