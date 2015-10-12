@@ -60,6 +60,14 @@ var selected_Pos;
 
 var renderOrder = [];
 
+var stack1 = [];
+var stack2 = [];
+var stack3 = [];
+var stack4 = [];
+var stack5 = [];
+var stack6 = [];
+var stack7 = [];
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -143,6 +151,9 @@ window.onload = function init()
         cardVertices[ stacks[ 2 ][ 4 ] ][ 1 ] = newY + ( CARD_HEIGHT / 2 );
     }
 
+    // Init cards. 
+    // Generate a "deck" with the values 0 - 51 in random order.
+    // "deal" the cards in specified places ( the rows );
     function initCards()
     {
         for ( var i = 0; i < 52; ++i )
