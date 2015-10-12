@@ -131,8 +131,8 @@ window.onload = function init()
         newX = 2 * e.clientX / canvas.width - 1;
         newY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
 
-        cardVertices[ 2 ][ 0 ] = newX - ( CARD_WIDTH / 2 );
-        cardVertices[ 2 ][ 1 ] = newY + ( CARD_HEIGHT / 2 );
+        cardVertices[ 2 ][ 0 ] = newX;
+        cardVertices[ 2 ][ 1 ] = newY;
     }
 
     function initCards()
