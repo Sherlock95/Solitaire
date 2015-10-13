@@ -52,6 +52,8 @@ var cardVertices = [];
 var cardColors = [];
 var cards = [];
 var deck;
+var selectableCard = [];
+var selectableStack = [];
 var selectedCards = [];
 var selected_Pos;
 
@@ -116,27 +118,50 @@ window.onload = function init()
 
     setInterval( render, 15 );
 
-//     Rendering by setting certain positions in the buffer to set values. DO THIS.
-//            gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
-//            tmp1 = [
-//                cardVertices[ i ],
-//                vec2( cardVertices[ i ][ 0 ] + CARD_WIDTH, cardVertices[ i ][ 1 ] ),
-//                vec2( cardVertices[ i ][ 0 ], cardVertices[ i ][ 1 ] - CARD_HEIGHT ),
-//                vec2( cardVertices[ i ][ 0 ] + CARD_WIDTH, cardVertices[ i ][ 1 ] - CARD_HEIGHT ),
-//                vec2( cardVertices[ i ][ 0 ], cardVertices[ i ][ 1 ] - CARD_HEIGHT ),
-//                vec2( cardVertices[ i ][ 0 ] + CARD_WIDTH, cardVertices[ i ][ 1 ] )
-//            ];
-//            gl.bufferSubData( gl.ARRAY_BUFFER, 48 * i, flatten( tmp1 ) );
-
     function render()
     {
         gl.clear( gl.COLOR_BUFFER_BIT );
+
+        // Push card positions to vertex shader buffer.
+        for ( var i = 0; i < renderOrder.length; ++i )
+        {
+            var index = renderOrder[ i ];
+            gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
+            var tmp = [
+                cardVertices[ index ],
+                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] ),
+                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] )
+            ];
+            gl.bufferSubData( gl.ARRAY_BUFFER, 48 * i, flatten( tmp ) );
+        }
+
         gl.drawArrays( gl.TRIANGLES, 0, 312 );
     }
 
     function mouseDown( e )
     {
+        // Tell the program that the mouse is pressing down.
         drag = true;
+        
+        // Get current position of the mouse in terms of WebGL.
+        var currX = 2 * e.clientX / canvas.width - 1;
+        var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
+
+        // Loop over the list of selectable cards to see if the
+        // mouse is over any of them.
+        for ( var i = 0; i < selectable.length; ++i )
+        {
+            var cardX = cardVertices[ selectable[ i ] ][ 0 ];
+            var cardY = cardVertices[ selectable[ i ] ][ 1 ];
+            if ( currX > cardX && currX < ( cardX + CARD_WIDTH ) && 
+                 currY < cardY && currY > ( cardY - CARD_HEIGHT ) )
+            {
+                selectedCards.push( selectable[ i ] );
+            }
+        }
     }
 
     function mouseUp( e )
@@ -153,6 +178,12 @@ window.onload = function init()
 
         newX = 2 * e.clientX / canvas.width - 1;
         newY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
+
+        for ( var i = 0; i < selectedCards.length; ++i )
+        {
+            cardVertices[ selectedCards[ i ] ][ 0 ] = newX - CARD_WIDTH / 2;
+            cardVertices[ selectedCards[ i ] ][ 1 ] = newY + CARD_HEIGHT / 2;
+        }
     }
 
     // Init cards. 
@@ -285,21 +316,6 @@ window.onload = function init()
 
         renderOrder.push( stacks[ 0 ][ 6 ] );
 
-        // Push card positions to vertex shader buffer.
-        for ( var i = 0; i < renderOrder.length; ++i )
-        {
-            var index = renderOrder[ i ];
-            gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
-            var tmp = [
-                cardVertices[ index ],
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] ),
-                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] )
-            ];
-            gl.bufferSubData( gl.ARRAY_BUFFER, 48 * i, flatten( tmp ) );
-        }
 
         for ( var i = 0; i < renderOrder.length; ++i )
         {
@@ -314,6 +330,13 @@ window.onload = function init()
                 cardColors[ i % 4 ]
             ];
             gl.bufferSubData( gl.ARRAY_BUFFER, 96 * i, flatten( tmp ) );
+        }
+
+        selectable.push( deck[ deck.length - 1 ] );
+
+        for ( var i = 0; i < 7; ++i )
+        {
+            selectable.push( stacks[ i ][ 6 - i ] );
         }
     }
 };
