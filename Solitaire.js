@@ -68,6 +68,16 @@ var stack5 = [];
 var stack6 = [];
 var stack7 = [];
 
+var stack1 = [];
+var stack2 = [];
+var stack3 = [];
+var stack4 = [];
+var stack5 = [];
+var stack6 = [];
+var stack7 = [];
+var deck = [];
+var selectable = [];
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -130,6 +140,9 @@ window.onload = function init()
     function mouseDown( e )
     {
         drag = true;
+
+        var mouseX = 2 * e.clientX / canvas.width - 1;
+        var mouseY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
     }
 
     function mouseUp( e )
