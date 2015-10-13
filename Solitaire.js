@@ -51,10 +51,7 @@ var cardSuites = ["spades", "hearts", "clubs", "diamonds" ];
 var cardVertices = [];
 var cardColors = [];
 var cards = [];
-var deck = [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 
-            13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 
-            26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 
-            39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ];
+var deck;
 var selectedCards = [];
 var selected_Pos;
 
@@ -108,7 +105,7 @@ window.onload = function init()
     gl.bufferData( gl.ARRAY_BUFFER, 16 * 312, gl.STATIC_DRAW );
 
     vColor = gl.getAttribLocation( program, "vColor" );
-    gl.vertexAttribPointer( vColor, 2, gl.FLOAT, false, 0, 0 );
+    gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
     
     canvas.addEventListener( "mousedown", mouseDown );
@@ -140,9 +137,6 @@ window.onload = function init()
     function mouseDown( e )
     {
         drag = true;
-
-        var mouseX = 2 * e.clientX / canvas.width - 1;
-        var mouseY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
     }
 
     function mouseUp( e )
@@ -159,9 +153,6 @@ window.onload = function init()
 
         newX = 2 * e.clientX / canvas.width - 1;
         newY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
-
-        cardVertices[ stacks[ 2 ][ 4 ] ][ 0 ] = newX - ( CARD_WIDTH / 2 );
-        cardVertices[ stacks[ 2 ][ 4 ] ][ 1 ] = newY + ( CARD_HEIGHT / 2 );
     }
 
     // Init cards. 
@@ -169,14 +160,20 @@ window.onload = function init()
     // "deal" the cards in specified places ( the rows );
     function initCards()
     {
+        deck = [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 
+                    13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 
+                    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 
+                    39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ];
+
         for ( var i = 0; i < 52; ++i )
         {
             cardVertices.push( vec2( -0.125, 0.25 ) );
         }
 
         cardColors.push( vec4( 1.0, 0.0, 0.0, 1.0 ) );
-        cardColors.push( vec4( 1.0, 1.0, 1.0, 1.0 ) );
+        cardColors.push( vec4( 0.0, 1.0, 0.0, 1.0 ) );
         cardColors.push( vec4( 0.0, 0.0, 1.0, 1.0 ) );
+        cardColors.push( vec4( 1.0, 1.0, 1.0, 1.0 ) );
 
         // Initialize the starting positions for cards in the stacks
         for ( var i = 0; i < 7; ++i )
@@ -309,12 +306,12 @@ window.onload = function init()
             var index = renderOrder[ i ];
             gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
             var tmp = [
-                vec4( 1.0, 0.0, 0.0, 1.0 ),
-                vec4( 1.0, 0.0, 0.0, 1.0 ),
-                vec4( 1.0, 0.0, 0.0, 1.0 ),
-                vec4( 1.0, 0.0, 0.0, 1.0 ),
-                vec4( 1.0, 0.0, 0.0, 1.0 ),
-                vec4( 1.0, 0.0, 0.0, 1.0 )
+                cardColors[ i % 4 ],
+                cardColors[ i % 4 ],
+                cardColors[ i % 4 ],
+                cardColors[ i % 4 ],
+                cardColors[ i % 4 ],
+                cardColors[ i % 4 ]
             ];
             gl.bufferSubData( gl.ARRAY_BUFFER, 96 * i, flatten( tmp ) );
         }
