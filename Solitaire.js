@@ -167,6 +167,11 @@ window.onload = function init()
     function mouseUp( e )
     {
         drag = false;
+
+        for ( var i = 0; i < selectedCards.length; ++i )
+        {
+            selectedCards.pop();
+        }
     }
 
     function mouseMove( e )
