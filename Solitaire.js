@@ -15,7 +15,12 @@
 //
 // NOTES:
 //      WebGL, when rendering 2D, implements depth by saying that things drawn
-//          later are 
+//          most recently are on top.
+//
+//      To implement cards: we can imagine that the cards are ordered ace x 4,
+//          two x 4, three x 4, etc. This allows us to see that card_index % 2
+//          gives us the color (even = black, odd = red) and index / 4 gives us
+//          the number (0 = ace, 1 = two, etc.)
 
 var canvas;
 var gl;
@@ -172,6 +177,8 @@ window.onload = function init()
     {
         drag = false;
 
+        // TODO: Implement card logic here.
+
         selectedCards = [];
     }
 
@@ -197,6 +204,7 @@ window.onload = function init()
     // "deal" the cards in specified places ( the rows );
     function initCards()
     {
+        // Init stuffs
         deck = [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 
                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 
                     26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 
@@ -219,6 +227,7 @@ window.onload = function init()
         }
 
         // Shuffle the deck - Modern Fisher-Yates Shuffle Algorithm O( n )
+        //      unless Math.random() has a problem.
         // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
         for ( var i = 51; i > 0; --i )
         {
@@ -229,15 +238,37 @@ window.onload = function init()
         }
         
         // Deal out the cards.
-        var track = 7;
         for ( var i = 0; i < 7; ++i )
         {
-            for ( var j = 0; j < track; ++j )
-            {
-                stacks[ i ].push( deck.pop() );
-            }
-            --track;
+            stacks[ 0 ].push( deck.pop() );
         }
+
+        for ( var i = 0; i < 6; ++i )
+        {
+            stacks[ 1 ].push( deck.pop() );
+        }
+
+        for ( var i = 0; i < 5; ++i )
+        {
+            stacks[ 2 ].push( deck.pop() );
+        }
+
+        for ( var i = 0; i < 4; ++i )
+        {
+            stacks[ 3 ].push( deck.pop() );
+        }
+
+        for ( var i = 0; i < 3; ++i )
+        {
+            stacks[ 4 ].push( deck.pop() );
+        }
+
+        for ( var i = 0; i < 2; ++i )
+        {
+            stacks[ 5 ].push( deck.pop() );
+        }
+
+        stacks[ 6 ].push( deck.pop() );
 
         // Record the position of the cards in the stacks.
 
