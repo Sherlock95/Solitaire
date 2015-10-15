@@ -35,7 +35,7 @@ var deltaY = 0;
 
 var CARD_WIDTH = 0.2;
 var CARD_HEIGHT = 0.5;
-var offset = 0.1;
+var offset = 0.14;
 
 var stacks = [ [], [], [], [], [], [], [] ];
 var stackStartPos = [];
@@ -59,21 +59,6 @@ var selected_Pos;
 
 var renderOrder = [];
 
-var stack1 = [];
-var stack2 = [];
-var stack3 = [];
-var stack4 = [];
-var stack5 = [];
-var stack6 = [];
-var stack7 = [];
-
-var stack1 = [];
-var stack2 = [];
-var stack3 = [];
-var stack4 = [];
-var stack5 = [];
-var stack6 = [];
-var stack7 = [];
 var deck = [];
 var selectable = [];
 
