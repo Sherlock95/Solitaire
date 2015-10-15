@@ -53,7 +53,6 @@ var cardColors = [];
 var cards = [];
 var deck;
 var selectableCard = [];
-var selectableStack = [];
 var selectedCards = [];
 var selected_Pos;
 
@@ -145,6 +144,31 @@ window.onload = function init()
                  currY < cardY && currY > ( cardY - CARD_HEIGHT ) )
             {
                 selectedCards.push( selectable[ i ] );
+                renderOrder.splice( renderOrder.indexOf( selectable[ i ] ), 1 );
+                renderOrder.push( selectable[ i ] );
+            }
+        }
+
+        // Check if the mouse is selecting a stack of cards.
+        for ( var i = 0; i < stacks.length; ++i )
+        {
+            for ( var j = 0; j < stacks[ i ].length; ++j )
+            {
+                cardX = cardVertices[ stacks[ i ][ j ] ][ 0 ];
+                cardY = cardVertices[ stacks[ i ][ j ] ][ 1 ];
+
+                if ( currX > cardX && currX < ( cardX + CARD_WIDTH ) &&
+                     currY < cardY && currY > ( cardY - offset ) )
+                {
+                    for ( var k = j; k < stacks[ i ].length; ++k )
+                    {
+                        selectedCards.push( stacks[ i ][ k ] );
+                        renderOrder.splice( renderOrder.indexOf( stacks[ i ][ k ] ), 1 );
+                        renderOrder.push( stacks[ i ][ k ] );
+                    }
+
+                    break;
+                }
             }
         }
     }
@@ -172,7 +196,7 @@ window.onload = function init()
         for ( var i = 0; i < selectedCards.length; ++i )
         {
             cardVertices[ selectedCards[ i ] ][ 0 ] = newX - CARD_WIDTH / 2;
-            cardVertices[ selectedCards[ i ] ][ 1 ] = newY + CARD_HEIGHT / 2;
+            cardVertices[ selectedCards[ i ] ][ 1 ] = ( newY + CARD_HEIGHT / 2 ) - ( offset * i );
         }
     }
 
