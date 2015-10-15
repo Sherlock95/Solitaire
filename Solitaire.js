@@ -46,13 +46,10 @@ var finish_stackC = [];
 var finish_stackD = [];
 var finish_stackPos = [];
 
-var cardNumbers = [ "ace", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king" ];
-var cardSuites = ["spades", "hearts", "clubs", "diamonds" ];
 var cardVertices = [];
 var cardColors = [];
 var cards = [];
 var deck;
-var selectableCard = [];
 var selectedCards = [];
 var selected_Pos;
 
@@ -134,42 +131,40 @@ window.onload = function init()
         var currX = 2 * e.clientX / canvas.width - 1;
         var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
 
-        // Loop over the list of selectable cards to see if the
-        // mouse is over any of them.
-        for ( var i = 0; i < selectable.length; ++i )
+        // Check if the mouse is selecting a stack of cards.
+        // Find stack that has cursor over it.
+        var x_index;
+        for ( var i = 0; i < stackStartPos.length; ++i )
         {
-            var cardX = cardVertices[ selectable[ i ] ][ 0 ];
-            var cardY = cardVertices[ selectable[ i ] ][ 1 ];
-            if ( currX > cardX && currX < ( cardX + CARD_WIDTH ) && 
-                 currY < cardY && currY > ( cardY - CARD_HEIGHT ) )
+            if ( currX > stackStartPos[ i ][ 0 ] &&
+                 currX < stackStartPos[ i ][ 0 ] + CARD_WIDTH )
             {
-                selectedCards.push( selectable[ i ] );
-                renderOrder.splice( renderOrder.indexOf( selectable[ i ] ), 1 );
-                renderOrder.push( selectable[ i ] );
+                x_index = 6 - i;
+                break;
             }
         }
 
-        // Check if the mouse is selecting a stack of cards.
-        for ( var i = 0; i < stacks.length; ++i )
+        // Find index by taking the y-value of the mouse and finding
+        // the stack y-range it falls in.
+        var y_index;
+        for ( var i = 0; i < stacks[ x_index ].length; ++i )
         {
-            for ( var j = 0; j < stacks[ i ].length; ++j )
+            var test_y = 0.41 - ( offset * i );
+            if ( ( currY < test_y && currY > test_y - offset ) ||
+                 ( i == stacks[ x_index ].length - 1 && currY < test_y && currY > test_y - CARD_HEIGHT ) )
             {
-                cardX = cardVertices[ stacks[ i ][ j ] ][ 0 ];
-                cardY = cardVertices[ stacks[ i ][ j ] ][ 1 ];
-
-                if ( currX > cardX && currX < ( cardX + CARD_WIDTH ) &&
-                     currY < cardY && currY > ( cardY - offset ) )
-                {
-                    for ( var k = j; k < stacks[ i ].length; ++k )
-                    {
-                        selectedCards.push( stacks[ i ][ k ] );
-                        renderOrder.splice( renderOrder.indexOf( stacks[ i ][ k ] ), 1 );
-                        renderOrder.push( stacks[ i ][ k ] );
-                    }
-
-                    break;
-                }
+                y_index = i;
+                break;
             }
+        }
+
+        // Put the card selected and all cards below it into the selected
+        // array
+        for ( var i = y_index; i < stacks[ x_index ].length; ++i )
+        {
+            selectedCards.push( stacks[ x_index ][ i ] );
+            renderOrder.splice( renderOrder.indexOf( stacks[ x_index ][ i ] ), 1 );
+            renderOrder.push( stacks[ x_index ][ i ] );
         }
     }
 
@@ -177,10 +172,7 @@ window.onload = function init()
     {
         drag = false;
 
-        for ( var i = 0; i < selectedCards.length; ++i )
-        {
-            selectedCards.pop();
-        }
+        selectedCards = [];
     }
 
     function mouseMove( e )
@@ -196,7 +188,7 @@ window.onload = function init()
         for ( var i = 0; i < selectedCards.length; ++i )
         {
             cardVertices[ selectedCards[ i ] ][ 0 ] = newX - CARD_WIDTH / 2;
-            cardVertices[ selectedCards[ i ] ][ 1 ] = ( newY + CARD_HEIGHT / 2 ) - ( offset * i );
+            cardVertices[ selectedCards[ i ] ][ 1 ] = newY - ( offset * i );
         }
     }
 
@@ -344,13 +336,6 @@ window.onload = function init()
                 cardColors[ i % 4 ]
             ];
             gl.bufferSubData( gl.ARRAY_BUFFER, 96 * i, flatten( tmp ) );
-        }
-
-        selectable.push( deck[ deck.length - 1 ] );
-
-        for ( var i = 0; i < 7; ++i )
-        {
-            selectable.push( stacks[ i ][ 6 - i ] );
         }
     }
 };
