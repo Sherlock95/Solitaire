@@ -3,20 +3,20 @@ an assignment for my Computer Graphics class.
 
 DONE:
     -Background rendered
-
-TODO:
     -Render a card
     -Make card draggable to new position
-    -Make card flippable.
     -Render multiple cards.
     -Render multiple cards in positions related to one another.
     -Render cards in a stack
     -Make cards in a stack moveable as a stack
-    -Make cards in a stack moveable as an allowable stack
-    -Get a deck in order
     -Make the deck drawable from
     -Get positions for four stacks
     -Get positions for game board stacks
+
+TODO:
+    -Make card flippable.
+    -Make cards in a stack moveable as an allowable stack
+    -Get a deck in order
     -Deal cards correctly
     -Implement correct rules
     -etc.
