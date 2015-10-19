@@ -225,7 +225,7 @@ window.onload = function init()
             return;
         }
 
-        var stack_pos = stacks[ x_index ].length - 1;
+        var stack_pos = stacks[ x_index ].length;
 
         for ( var i = 0; i < selectedCards.length; ++i )
         {
