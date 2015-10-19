@@ -57,6 +57,8 @@ var cards = [];
 var deck;
 var selectedCards = [];
 var selected_Pos;
+var prev_pos = [];
+var prev_stack;
 
 var renderOrder = [];
 
@@ -138,7 +140,7 @@ window.onload = function init()
 
         // Check if the mouse is selecting a stack of cards.
         // Find stack that has cursor over it.
-        var x_index;
+        var x_index = 8;
         for ( var i = 0; i < stackStartPos.length; ++i )
         {
             if ( currX > stackStartPos[ i ][ 0 ] &&
@@ -149,27 +151,39 @@ window.onload = function init()
             }
         }
 
+        if ( x_index == 8 )
+        {
+            return;
+        }
+
         // Find index by taking the y-value of the mouse and finding
         // the stack y-range it falls in.
         var y_index;
-        for ( var i = 0; i < stacks[ x_index ].length; ++i )
+        var stack_len = stacks[ x_index ].length;
+        var stack_last = stack_len - 1;
+        for ( var i = 0; i < stack_len; ++i )
         {
             var test_y = 0.41 - ( offset * i );
             if ( ( currY < test_y && currY > test_y - offset ) ||
-                 ( i == stacks[ x_index ].length - 1 && currY < test_y && currY > test_y - CARD_HEIGHT ) )
+                 ( i == stack_last && currY < test_y && currY > test_y - CARD_HEIGHT ) )
             {
                 y_index = i;
                 break;
             }
         }
 
+        prev_pos[ 0 ] = cardVertices[ stacks[ x_index ][ y_index ] ][ 0 ];
+        prev_pos[ 1 ] = cardVertices[ stacks[ x_index ][ y_index ] ][ 1 ];
+        prev_stack = x_index;
+        
         // Put the card selected and all cards below it into the selected
         // array
-        for ( var i = y_index; i < stacks[ x_index ].length; ++i )
+        for ( var i = y_index; i < stack_len; ++i )
         {
-            selectedCards.push( stacks[ x_index ][ i ] );
-            renderOrder.splice( renderOrder.indexOf( stacks[ x_index ][ i ] ), 1 );
-            renderOrder.push( stacks[ x_index ][ i ] );
+            selectedCards.push( stacks[ x_index ][ y_index ] );
+            renderOrder.splice( renderOrder.indexOf( stacks[ x_index ][ y_index ] ), 1 );
+            renderOrder.push( stacks[ x_index ][ y_index ] );
+            stacks[ x_index ].splice( y_index, 1 );
         }
     }
 
@@ -177,9 +191,57 @@ window.onload = function init()
     {
         drag = false;
 
+        // Get current position of the mouse in terms of WebGL.
+        var currX = 2 * e.clientX / canvas.width - 1;
+        var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
+
         // TODO: Implement card logic here.
+        var x_index = 8;
+        for ( var i = 0; i < stackStartPos.length; ++i )
+        {
+            if ( currX > stackStartPos[ i ][ 0 ] &&
+                 currX < stackStartPos[ i ][ 0 ] + CARD_WIDTH )
+            {
+                x_index = 6 - i;
+                break;
+            }
+        }
+
+        if ( x_index == 8 ||
+             currY > stackStartPos[ 6 - x_index ][ 1 ] ||
+             currY < ( stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stacks[ x_index ].length - 1 ) ) - CARD_HEIGHT ) )
+        {
+            for ( var i = 0; i < selectedCards.length; ++i )
+            {
+                stacks[ prev_stack ].push( selectedCards[ i ] );
+                cardVertices[ selectedCards[ i ] ][ 0 ] = prev_pos[ 0 ];
+                cardVertices[ selectedCards[ i ] ][ 1 ] = prev_pos[ 1 ] - ( offset * i );
+            }
+
+            selectedCards = [];
+            prev_stack = 8;
+            prev_pos = [];
+
+            return;
+        }
+
+        var stack_pos = stacks[ x_index ].length - 1;
+
+        for ( var i = 0; i < selectedCards.length; ++i )
+        {
+            stacks[ x_index ].push( selectedCards[ i ] );
+        }
+
+        for ( var i = 0; i < selectedCards.length; ++i )
+        {
+            var card = stacks[ x_index ][ stack_pos + i];
+            cardVertices[ card ][ 0 ] = stackStartPos[ 6 - x_index ][ 0 ];
+            cardVertices[ card ][ 1 ] = stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stack_pos + i ) );
+        }
 
         selectedCards = [];
+        prev_stack = 8;
+        prev_pos = [];
     }
 
     function mouseMove( e )
