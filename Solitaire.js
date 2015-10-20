@@ -42,14 +42,9 @@ var CARD_WIDTH = 0.2;
 var CARD_HEIGHT = 0.5;
 var offset = 0.14;
 
-var stacks = [ [], [], [], [], [], [], [] ];
-var stackStartPos = [];
+var stacks = [ [], [], [], [], [], [], [], [], [], [], [], [] ];
+var stackPos = [];
 var deck_position = vec2( -0.981, 0.981 );
-var finish_stackS = [];
-var finish_stackH = [];
-var finish_stackC = [];
-var finish_stackD = [];
-var finish_stackPos = [];
 
 var cardVertices = [];
 var cardColors = [];
@@ -59,6 +54,7 @@ var selectedCards = [];
 var selected_Pos;
 var prev_pos = [];
 var prev_stack;
+var deckcard_prev = 0;
 
 var renderOrder = [];
 
@@ -138,21 +134,27 @@ window.onload = function init()
         var currX = 2 * e.clientX / canvas.width - 1;
         var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
 
-        // Check if the mouse is selecting a stack of cards.
         // Find stack that has cursor over it.
-        var x_index = 8;
-        for ( var i = 0; i < stackStartPos.length; ++i )
+        var x_index = -1;
+        for ( var i = 0; i < stackPos.length - 5; ++i )
         {
-            if ( currX > stackStartPos[ i ][ 0 ] &&
-                 currX < stackStartPos[ i ][ 0 ] + CARD_WIDTH )
+            if ( currX > stackPos[ i ][ 0 ] &&
+                 currX < stackPos[ i ][ 0 ] + CARD_WIDTH &&
+                 currY < stackPos[ 7 ][ 1 ] - CARD_HEIGHT )
             {
                 x_index = 6 - i;
                 break;
             }
         }
 
-        if ( x_index == 8 )
+        if ( x_index == -1 )
         {
+            if ( currX > stackPos[ 7 ][ 0 ] &&
+                 currX < stackPos[ 7 ][ 0 ] + CARD_WIDTH )
+            {
+                stacks[ 7 ].push( deck.pop() );
+                renderOrder.push( deck[ deck.length - 1 ] );
+            }
             return;
         }
 
@@ -195,21 +197,22 @@ window.onload = function init()
         var currX = 2 * e.clientX / canvas.width - 1;
         var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
 
-        // TODO: Implement card logic here.
-        var x_index = 8;
-        for ( var i = 0; i < stackStartPos.length; ++i )
+        // Search for which stack the cursor is in, ignoring the draw deck.
+        var x_index = -1;
+        for ( var i = 0; i < stackPos.length - 5; ++i )
         {
-            if ( currX > stackStartPos[ i ][ 0 ] &&
-                 currX < stackStartPos[ i ][ 0 ] + CARD_WIDTH )
+            if ( currX > stackPos[ i ][ 0 ] &&
+                 currX < stackPos[ i ][ 0 ] + CARD_WIDTH  &&
+                 currY < stackPos[ 7 ][ 1 ] - CARD_HEIGHT )
             {
                 x_index = 6 - i;
                 break;
             }
         }
 
-        if ( x_index == 8 ||
-             currY > stackStartPos[ 6 - x_index ][ 1 ] ||
-             currY < ( stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stacks[ x_index ].length - 1 ) ) - CARD_HEIGHT ) )
+        if ( x_index == -1 ||
+             currY > stackPos[ 6 - x_index ][ 1 ] ||
+             currY < ( stackPos[ 6 - x_index ][ 1 ] - ( offset * ( stacks[ x_index ].length - 1 ) ) - CARD_HEIGHT ) )
         {
             for ( var i = 0; i < selectedCards.length; ++i )
             {
@@ -219,7 +222,7 @@ window.onload = function init()
             }
 
             selectedCards = [];
-            prev_stack = 8;
+            prev_stack = -1;
             prev_pos = [];
 
             return;
@@ -231,7 +234,8 @@ window.onload = function init()
         var topcard_num = Math.floor( stacks[ x_index ][ stacks[ x_index ].length - 1 ] / 4 );
         var topcard_colr = stacks[ x_index ][ stacks[ x_index ].length - 1 ] % 2;
 
-        if ( ( topcard_colr ^ botcard_colr !== 1 ) || ( botcard_num + 1 !== topcard_num ) )
+        // The bitwise XOR is to see if the cards are of a different color.
+        if ( !( topcard_colr ^ botcard_colr ) || ( botcard_num + 1 !== topcard_num ) )
         {
             for ( var i = 0; i < selectedCards.length; ++i )
             {
@@ -241,7 +245,7 @@ window.onload = function init()
             }
 
             selectedCards = [];
-            prev_stack = 8;
+            prev_stack = -1;
             prev_pos = [];
 
             return;
@@ -256,13 +260,13 @@ window.onload = function init()
             for ( var i = 0; i < selectedCards.length; ++i )
             {
                 var card = stacks[ x_index ][ stack_pos + i];
-                cardVertices[ card ][ 0 ] = stackStartPos[ 6 - x_index ][ 0 ];
-                cardVertices[ card ][ 1 ] = stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stack_pos + i ) );
+                cardVertices[ card ][ 0 ] = stackPos[ 6 - x_index ][ 0 ];
+                cardVertices[ card ][ 1 ] = stackPos[ 6 - x_index ][ 1 ] - ( offset * ( stack_pos + i ) );
             }
         }
 
         selectedCards = [];
-        prev_stack = 8;
+        prev_stack = -1;
         prev_pos = [];
     }
 
@@ -307,7 +311,14 @@ window.onload = function init()
         // Initialize the starting positions for cards in the stacks
         for ( var i = 0; i < 7; ++i )
         {
-            stackStartPos.push( vec2( -0.98 + ( 0.25 * i ), 0.41 ) );
+            stackPos.push( vec2( -0.98 + ( 0.25 * i ), 0.41 ) );
+        }
+
+        stackPos.push( vec2( deck_position[ 0 ] + CARD_WIDTH + offset, deck_position[ 1 ] ) );
+
+        for ( var i = 0; i < 4; ++i )
+        {
+            stackPos.push( vec2( stackPos[ 3 ][ 0 ] + ( 0.25 * i ), deck_position[ 1 ] ) );
         }
 
         // Shuffle the deck - Modern Fisher-Yates Shuffle Algorithm O( n )
@@ -357,42 +368,42 @@ window.onload = function init()
         // Record the position of the cards in the stacks.
 
         // Stack 1
-        cardVertices[ stacks[ 6 ][ 0 ] ] = vec2( stackStartPos[ 0 ][ 0 ], stackStartPos[ 0 ][ 1 ] );
+        cardVertices[ stacks[ 6 ][ 0 ] ] = vec2( stackPos[ 0 ][ 0 ], stackPos[ 0 ][ 1 ] );
 
         // Stack 2
         for ( var i = 0; i < 2; ++i )
         {
-            cardVertices[ stacks[ 5 ][ i ] ] = vec2( stackStartPos[ 1 ][ 0 ], stackStartPos[ 1 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 5 ][ i ] ] = vec2( stackPos[ 1 ][ 0 ], stackPos[ 1 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 3
         for ( var i = 0; i < 3; ++i )
         {
-            cardVertices[ stacks[ 4 ][ i ] ] = vec2( stackStartPos[ 2 ][ 0 ], stackStartPos[ 2 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 4 ][ i ] ] = vec2( stackPos[ 2 ][ 0 ], stackPos[ 2 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 4
         for ( var i = 0; i < 4; ++i )
         {
-            cardVertices[ stacks[ 3 ][ i ] ] = vec2( stackStartPos[ 3 ][ 0 ], stackStartPos[ 3 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 3 ][ i ] ] = vec2( stackPos[ 3 ][ 0 ], stackPos[ 3 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 5
         for ( var i = 0; i < 5; ++i )
         {
-            cardVertices[ stacks[ 2 ][ i ] ] = vec2( stackStartPos[ 4 ][ 0 ], stackStartPos[ 4 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 2 ][ i ] ] = vec2( stackPos[ 4 ][ 0 ], stackPos[ 4 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 6
         for ( var i = 0; i < 6; ++i )
         {
-            cardVertices[ stacks[ 1 ][ i ] ] = vec2( stackStartPos[ 5 ][ 0 ], stackStartPos[ 5 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 1 ][ i ] ] = vec2( stackPos[ 5 ][ 0 ], stackPos[ 5 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 7
         for ( var i = 0; i < 7; ++i )
         {
-            cardVertices[ stacks[ 0 ][ i ] ] = vec2( stackStartPos[ 6 ][ 0 ], stackStartPos[ 6 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 0 ][ i ] ] = vec2( stackPos[ 6 ][ 0 ], stackPos[ 6 ][ 1 ] - ( offset * i ) );
         }
 
         // Record position of the deck.
