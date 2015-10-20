@@ -226,6 +226,10 @@ window.onload = function init()
         }
 
         var stack_pos = stacks[ x_index ].length;
+        var botcard_num = Math.floor( selectedCards[ 0 ] / 4 );
+        var botcard_colr = selectedCards[ 0 ] % 2; // 0 = BLACK, 1 = RED
+        var topcard_num = Math.floor( stacks[ x_index ][ stacks[ x_index ].length - 1 ] / 4 );
+        var topcard_colr = stacks[ x_index ][ stacks[ x_index ].length - 1 ] % 2;
 
         for ( var i = 0; i < selectedCards.length; ++i )
         {
