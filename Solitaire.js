@@ -231,16 +231,34 @@ window.onload = function init()
         var topcard_num = Math.floor( stacks[ x_index ][ stacks[ x_index ].length - 1 ] / 4 );
         var topcard_colr = stacks[ x_index ][ stacks[ x_index ].length - 1 ] % 2;
 
-        for ( var i = 0; i < selectedCards.length; ++i )
+        if ( ( topcard_colr ^ botcard_colr !== 1 ) || ( botcard_num + 1 !== topcard_num ) )
         {
-            stacks[ x_index ].push( selectedCards[ i ] );
-        }
+            for ( var i = 0; i < selectedCards.length; ++i )
+            {
+                stacks[ prev_stack ].push( selectedCards[ i ] );
+                cardVertices[ selectedCards[ i ] ][ 0 ] = prev_pos[ 0 ];
+                cardVertices[ selectedCards[ i ] ][ 1 ] = prev_pos[ 1 ] - ( offset * i );
+            }
 
-        for ( var i = 0; i < selectedCards.length; ++i )
+            selectedCards = [];
+            prev_stack = 8;
+            prev_pos = [];
+
+            return;
+        }
+        else
         {
-            var card = stacks[ x_index ][ stack_pos + i];
-            cardVertices[ card ][ 0 ] = stackStartPos[ 6 - x_index ][ 0 ];
-            cardVertices[ card ][ 1 ] = stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stack_pos + i ) );
+            for ( var i = 0; i < selectedCards.length; ++i )
+            {
+                stacks[ x_index ].push( selectedCards[ i ] );
+            }
+
+            for ( var i = 0; i < selectedCards.length; ++i )
+            {
+                var card = stacks[ x_index ][ stack_pos + i];
+                cardVertices[ card ][ 0 ] = stackStartPos[ 6 - x_index ][ 0 ];
+                cardVertices[ card ][ 1 ] = stackStartPos[ 6 - x_index ][ 1 ] - ( offset * ( stack_pos + i ) );
+            }
         }
 
         selectedCards = [];
