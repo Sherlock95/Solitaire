@@ -12,13 +12,14 @@ DONE:
     -Make the deck drawable from
     -Get positions for four stacks
     -Get positions for game board stacks
-
-TODO:
-    -Make card flippable.
     -Make cards in a stack moveable as an allowable stack
     -Get a deck in order
     -Deal cards correctly
+
+TODO:
+    -Make card flippable.
     -Implement correct rules
+    -Give cards a texture ( if desired, no textures is kinda fun :) )
     -etc.
 
 
