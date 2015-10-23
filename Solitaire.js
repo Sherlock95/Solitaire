@@ -21,6 +21,10 @@
 //          two x 4, three x 4, etc. This allows us to see that card_index % 2
 //          gives us the color (even = black, odd = red) and index / 4 gives us
 //          the number (0 = ace, 1 = two, etc.)
+//
+//      Only allow cards to be placed on another face-up card. Do not allow for
+//          putting cards on the stack to place them in the stack. Must place
+//          cards on the last card in stack for them to combine into one stack.
 
 var canvas;
 var gl;
@@ -35,30 +39,22 @@ var drag = false;
 var selected = false;
 
 var oldX, oldY;
-var deltaX = 0;
-var deltaY = 0;
 
-var CARD_WIDTH = 0.2;
-var CARD_HEIGHT = 0.5;
-var offset = 0.14;
+var CARD_WIDTH = 0.15;
+var CARD_HEIGHT = 0.4;
+var offset = 0.15;
 
-var stacks = [ [], [], [], [], [], [], [], [], [], [], [], [] ];
-var stackPos = [];
-
-var cardVertices = [];
-var cardColors = [];
-var cards = [];
-var deck;
-var selectedCards = [];
-var selected_Pos;
-var prev_pos = [];
-var prev_stack;
-var deckcard_prev = 0;
-
-var renderOrder = [];
-
-var deck = [];
-var selectable = [];
+var deck = []; // holds index for all cards.
+var card_x = []; // holds x values for all cards
+var card_y = []; // holds y values for all cards
+var stacks = [ [], [], [], [], [], [], 
+               [], [], [], [], [], [] ]; // holds the index of cards in stacks.
+var stack_pos = []; // holds positions of the stacks.
+var render_card = []; // holds index of cards being rendered
+var render_vertices = []; // holds the position of cards being rendered
+var face_up = []; // tells you which cards that are being rendered are face up
+var place_pos = []; // tells which positions are legal for placement.
+var click_pos = []; // tells which positions can be clicked.
 
 window.onload = function init()
 {
@@ -97,7 +93,7 @@ window.onload = function init()
     canvas.addEventListener( "mouseup", mouseUp );
     canvas.addEventListener( "mousemove", mouseMove );
 
-    initCards();
+    init();
 
     setInterval( render, 15 );
 
@@ -108,15 +104,19 @@ window.onload = function init()
         // Push card positions to vertex shader buffer.
         for ( var i = 0; i < renderOrder.length; ++i )
         {
-            var index = renderOrder[ i ];
             gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
             var tmp = [
-                cardVertices[ index ],
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] ),
-                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ], cardVertices[ index ][ 1 ] - CARD_HEIGHT ),
-                vec2( cardVertices[ index ][ 0 ] + CARD_WIDTH, cardVertices[ index ][ 1 ] )
+                cardVertices[ renderOrder[ i ] ],
+                vec2( cardVertices[ renderOrder[ i ] ][ 0 ] + CARD_WIDTH, 
+                        cardVertices[ renderOrder[ i ] ][ 1 ] ),
+                vec2( cardVertices[ renderOrder[ i ] ][ 0 ], 
+                        cardVertices[ renderOrder[ i ] ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ renderOrder[ i ] ][ 0 ] + CARD_WIDTH,
+                        cardVertices[ renderOrder[ i ] ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ renderOrder[ i ] ][ 0 ], 
+                        cardVertices[ renderOrder[ i ] ][ 1 ] - CARD_HEIGHT ),
+                vec2( cardVertices[ renderOrder[ i ] ][ 0 ] + CARD_WIDTH, 
+                        cardVertices[ index ][ 1 ] )
             ];
             gl.bufferSubData( gl.ARRAY_BUFFER, 48 * i, flatten( tmp ) );
         }
@@ -132,9 +132,6 @@ window.onload = function init()
         // Get current position of the mouse in terms of WebGL.
         var currX = 2 * e.clientX / canvas.width - 1;
         var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
-
-        // Find stack that has cursor over it.
-        var x_index = -1;
     }
 
     //NOTE: 0 - 6 are field stacks, 7 is draw deck, 8 - 11 are the finish stacks
@@ -145,24 +142,6 @@ window.onload = function init()
         // Get current position of the mouse in terms of WebGL.
         var currX = 2 * e.clientX / canvas.width - 1;
         var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
-
-        // Find the stack that the cursor is currently over, ignore draw deck.
-        var x_index = -1;
-        if ( currY < stackPos[ 7 ][ 1 ] && currY > stackPos[ 7 ][ 1 ] - CARD_HEIGHT )
-        {
-            for ( var i = 8; i < stackPos.length; ++i )
-            {
-                if ( currX > stackPos[ i ][ 0 ] &&
-                     currX < stackPos[ i ][ 0 ] + CARD_WIDTH )
-                {
-                    x_index = i;
-                }
-            }
-        }
-        else
-        {
-
-        }
     }
 
     function mouseMove( e )
@@ -185,7 +164,7 @@ window.onload = function init()
     // Init cards. 
     // Generate a "deck" with the values 0 - 51 in random order.
     // "deal" the cards in specified places ( the rows );
-    function initCards()
+    function init()
     {
         // Init stuffs
         deck = [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 
@@ -204,61 +183,22 @@ window.onload = function init()
             deck[ index ] = tmp;
         }
 
-        // Initialize the stacks.
-        stacks[ 0 ].push( deck.pop() );
-
-        for ( var i = 0; i < 2; ++i )
-        {
-            stacks[ 1 ].push( deck.pop() );
-        }
-
-        for ( var i = 0; i < 3; ++i )
-        {
-            stacks[ 2 ].push( deck.pop() );
-        }
-
-        for ( var i = 0; i < 4; ++i )
-        {
-            stacks[ 3 ].push( deck.pop() );
-        }
-
-        for ( var i = 0; i < 5; ++i )
-        {
-            stacks[ 4 ].push( deck.pop() );
-        }
-
-        for ( var i = 0; i < 6; ++i )
-        {
-            stacks[ 5 ].push( deck.pop() );
-        }
-
-        for ( var i = 0; i < 7; ++i )
-        {
-            stacks[ 6 ].push( deck.pop() );
-        }
-
+        // Init the card positions in the deck's initial position.
         for ( var i = 0; i < 52; ++i )
         {
-            cardVertices.push( vec2( -0.125, 0.25 ) );
+            card_x[ i ] = -offset;
+            card_y[ i ] = offset;
         }
 
-        cardColors.push( vec4( 1.0, 0.0, 0.0, 1.0 ) );
-        cardColors.push( vec4( 0.0, 1.0, 0.0, 1.0 ) );
-        cardColors.push( vec4( 0.0, 0.0, 1.0, 1.0 ) );
-        cardColors.push( vec4( 1.0, 1.0, 1.0, 1.0 ) );
-
-        // var deck_position = vec2( -0.981, 0.981 );
-        // Initialize inital deck positions
-        for ( var i = 0; i < 7; ++i )
-        {
-            stackPos[ i ] = vec2( -0.981 + ( i * ( CARD_WIDTH + offset ) ), 0.41 );
-        }
-
-        stackPos[ 7 ] = vec2( -0.981, -0.981 );
-
-        for ( var i = 0; i < 4; ++i )
-        {
-            stackPos[ 8 + i ] = vec2( -0.23 + ( i * ( CARD_WIDTH + offset ) ), 0.981 );
-        }
+        // edit in order:
+        stacks = [];
+        stack_pos = [];
+        card_x = []; 
+        card_y = []; 
+        render_card = []; 
+        render_vertices = []; 
+        face_up = []; 
+        place_pos = []; 
+        click_pos = []; 
     }
 };
