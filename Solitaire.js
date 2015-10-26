@@ -142,7 +142,7 @@ window.onload = function init()
                  currX < stackPos[ i ][ 0 ] + CARD_WIDTH &&
                  currY < stackPos[ 7 ][ 1 ] - CARD_HEIGHT )
             {
-                x_index = 6 - i;
+                x_index = i;
                 break;
             }
         }
@@ -205,7 +205,7 @@ window.onload = function init()
                  currX < stackPos[ i ][ 0 ] + CARD_WIDTH  &&
                  currY < stackPos[ 7 ][ 1 ] - CARD_HEIGHT )
             {
-                x_index = 6 - i;
+                x_index = i;
                 break;
             }
         }
@@ -332,18 +332,15 @@ window.onload = function init()
             deck[ index ] = tmp;
         }
         
-        // Deal out the cards.
-        for ( var i = 0; i < 7; ++i )
-        {
-            stacks[ 0 ].push( deck.pop() );
-        }
+        stacks[ 0 ].push( deck.pop() );
 
-        for ( var i = 0; i < 6; ++i )
+        // Deal out the cards.
+        for ( var i = 0; i < 2; ++i )
         {
             stacks[ 1 ].push( deck.pop() );
         }
 
-        for ( var i = 0; i < 5; ++i )
+        for ( var i = 0; i < 3; ++i )
         {
             stacks[ 2 ].push( deck.pop() );
         }
@@ -353,33 +350,36 @@ window.onload = function init()
             stacks[ 3 ].push( deck.pop() );
         }
 
-        for ( var i = 0; i < 3; ++i )
+        for ( var i = 0; i < 5; ++i )
         {
             stacks[ 4 ].push( deck.pop() );
         }
 
-        for ( var i = 0; i < 2; ++i )
+        for ( var i = 0; i < 6; ++i )
         {
             stacks[ 5 ].push( deck.pop() );
         }
 
-        stacks[ 6 ].push( deck.pop() );
+        for ( var i = 0; i < 7; ++i )
+        {
+            stacks[ 6 ].push( deck.pop() );
+        }
 
         // Record the position of the cards in the stacks.
 
         // Stack 1
-        cardVertices[ stacks[ 6 ][ 0 ] ] = vec2( stackPos[ 0 ][ 0 ], stackPos[ 0 ][ 1 ] );
+        cardVertices[ stacks[ 0 ][ 0 ] ] = vec2( stackPos[ 0 ][ 0 ], stackPos[ 0 ][ 1 ] );
 
         // Stack 2
         for ( var i = 0; i < 2; ++i )
         {
-            cardVertices[ stacks[ 5 ][ i ] ] = vec2( stackPos[ 1 ][ 0 ], stackPos[ 1 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 1 ][ i ] ] = vec2( stackPos[ 1 ][ 0 ], stackPos[ 1 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 3
         for ( var i = 0; i < 3; ++i )
         {
-            cardVertices[ stacks[ 4 ][ i ] ] = vec2( stackPos[ 2 ][ 0 ], stackPos[ 2 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 2 ][ i ] ] = vec2( stackPos[ 2 ][ 0 ], stackPos[ 2 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 4
@@ -391,19 +391,19 @@ window.onload = function init()
         // Stack 5
         for ( var i = 0; i < 5; ++i )
         {
-            cardVertices[ stacks[ 2 ][ i ] ] = vec2( stackPos[ 4 ][ 0 ], stackPos[ 4 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 4 ][ i ] ] = vec2( stackPos[ 4 ][ 0 ], stackPos[ 4 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 6
         for ( var i = 0; i < 6; ++i )
         {
-            cardVertices[ stacks[ 1 ][ i ] ] = vec2( stackPos[ 5 ][ 0 ], stackPos[ 5 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 5 ][ i ] ] = vec2( stackPos[ 5 ][ 0 ], stackPos[ 5 ][ 1 ] - ( offset * i ) );
         }
 
         // Stack 7
         for ( var i = 0; i < 7; ++i )
         {
-            cardVertices[ stacks[ 0 ][ i ] ] = vec2( stackPos[ 6 ][ 0 ], stackPos[ 6 ][ 1 ] - ( offset * i ) );
+            cardVertices[ stacks[ 6 ][ i ] ] = vec2( stackPos[ 6 ][ 0 ], stackPos[ 6 ][ 1 ] - ( offset * i ) );
         }
 
         // Record position of the deck.
@@ -416,17 +416,14 @@ window.onload = function init()
         // Only need to render top card in deck.
         renderOrder.push( deck[ deck.length - 1 ] );
 
-        for ( var i = 0; i < 7; ++i )
-        {
-            renderOrder.push( stacks[ i ][ 0 ] );
-        }
+        renderOrder.push( stacks[ 0 ][ 0 ] );
 
-        for ( var i = 0; i < 6; ++i )
+        for ( var i = 0; i < 2; ++i )
         {
             renderOrder.push( stacks[ i ][ 1 ] );
         }
 
-        for ( var i = 0; i < 5; ++i )
+        for ( var i = 0; i < 3; ++i )
         {
             renderOrder.push( stacks[ i ][ 2 ] );
         }
@@ -436,18 +433,20 @@ window.onload = function init()
             renderOrder.push( stacks[ i ][ 3 ] );
         }
 
-        for ( var i = 0; i < 3; ++i )
+        for ( var i = 0; i < 5; ++i )
         {
             renderOrder.push( stacks[ i ][ 4 ] );
         }
 
-        for ( var i = 0; i < 2; ++i )
+        for ( var i = 0; i < 6; ++i )
         {
             renderOrder.push( stacks[ i ][ 5 ] );
         }
 
-        renderOrder.push( stacks[ 0 ][ 6 ] );
-
+        for ( var i = 0; i < 7; ++i )
+        {
+            renderOrder.push( stacks[ i ][ 6 ] );
+        }
 
         for ( var i = 0; i < renderOrder.length; ++i )
         {
