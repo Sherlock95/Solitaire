@@ -183,6 +183,16 @@ window.onload = function init()
             deck[ index ] = tmp;
         }
 
+        // Initalize stacks. 7 stacks with 1-2-3-4-5-6-7 cards.
+        for ( var i = 0; i < 7; ++i )
+        {
+            var stack = stacks[ i ];
+            for ( var k = 0; k < i + 1; ++k )
+            {
+                stacks[ i ].push( deck.pop() );
+            }
+        }
+
         // Init the card positions in the deck's initial position.
         for ( var i = 0; i < 52; ++i )
         {
@@ -190,11 +200,20 @@ window.onload = function init()
             card_y[ i ] = offset;
         }
 
+        // Initialize each card's position in the stacks.
+        for ( var i = 0; i < 7; ++i )
+        {
+            var stack = stacks[ i ];
+            var x_off = -offset + CARD_WIDTH * i;
+            for ( var k = 0; k < i + 1; ++k )
+            {
+                var indx = stack[ k ];
+                card_x[ indx ] = x_off;
+                card_y[ indx ] = 0.481 - offset * k;
+            }
+        }
+
         // edit in order:
-        stacks = [];
-        stack_pos = [];
-        card_x = []; 
-        card_y = []; 
         render_card = []; 
         render_vertices = []; 
         face_up = []; 
