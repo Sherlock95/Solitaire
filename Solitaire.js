@@ -42,6 +42,15 @@ var oldX, oldY;
 
 var deck = []; // holds index for all cards.
 
+var colors = [
+    vec4( 1.0, 0.0, 0.0, 1.0 ),
+    vec4( 0.0, 1.0, 0.0, 1.0 ),
+    vec4( 0.0, 0.0, 1.0, 1.0 ),
+    vec4( 1.0, 1.0, 0.0, 1.0 ),
+    vec4( 1.0, 0.0, 1.0, 1.0 ),
+    vec4( 0.0, 1.0, 1.0, 1.0 )
+];
+
 var card_dim = {
     width: 0.15,
     height: 0.4,
@@ -76,9 +85,9 @@ function render()
     gl.clear( gl.COLOR_BUFFER_BIT );
 
     // Push card positions to vertex shader buffer.
+    gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
     for ( var i = 0; i < render_info.render_vertices_x.length; ++i )
     {
-        gl.bindBuffer( gl.ARRAY_BUFFER, verticesBuffer );
         var tmp = [
             vec2( render_info.render_vertices_x[ i ], 
                   render_info.render_vertices_y[ i ] ),
@@ -94,6 +103,20 @@ function render()
                   render_info.render_vertices_y[ i ] )
         ];
         gl.bufferSubData( gl.ARRAY_BUFFER, 48 * i, flatten( tmp ) );
+    }
+
+    gl.bindBuffer( gl.ARRAY_BUFFER, verticesColorBuffer );
+    for ( var i = 0; i < render_info.render_colors.length; ++i )
+    {
+        var tmp = [
+            render_info.render_colors[ i % 6 ],
+            render_info.render_colors[ i % 6 ],
+            render_info.render_colors[ i % 6 ],
+            render_info.render_colors[ i % 6 ],
+            render_info.render_colors[ i % 6 ],
+            render_info.render_colors[ i % 6 ]
+        ];
+        gl.bufferSubData( gl.ARRAY_BUFFER, 96 * i, flatten( tmp ) );
     }
 
     gl.drawArrays( gl.TRIANGLES, 0, 312 );
@@ -192,11 +215,10 @@ function init_cards()
     var x_off = -card_dim.offset + card_dim.width * i;
     for ( var i = 0; i < 7; ++i )
     {
-        var stack = stack_info.stacks[ i ];
         for ( var k = 0; k < i + 1; ++k )
         {
-            cards.cards_x[ stack[ k ] ] = x_off;
-            cards.cards_y[ stack[ k ] ] = 0.481 - ( card_dim.offset * k );
+            cards.cards_x[ stack_info.stacks[ i ] ] = x_off;
+            cards.cards_y[ stack_info.stacks[ i ] ] = 0.481 - ( card_dim.offset * k );
         }
     }
 }
@@ -205,7 +227,22 @@ function init_render()
 {
     render_info.render_vertices_x = []; 
     render_info.render_vertices_y = []; 
+
+    for ( var i = 0; i < 7; ++i )
+    {
+        for ( var k = 0; k < i + 1; ++k )
+        {
+            render_info.render_vertices_x.push( cards.cards_x[ stack_info.stacks[ i ][ k ] ] );
+            render_info.render_vertices_y.push( cards.cards_y[ stack_info.stacks[ i ][ k ] ] );
+        }
+    }
+
     render_info.render_colors = [];
+
+    for ( var i = 0; i < render_info.render_vertices_y; ++i )
+    {
+        render_info.render_colors.push( colors[ i % 6 ] );
+    }
 }
 
 window.onload = function()
