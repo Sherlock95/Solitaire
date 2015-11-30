@@ -41,6 +41,7 @@ var selected = false;
 var oldX, oldY;
 
 var deck = []; // holds index for all cards.
+var deck_pos = vec2( -0.98, 0.98 );
 
 var colors = [
     vec4( 1.0, 0.0, 0.0, 1.0 ),
@@ -59,13 +60,14 @@ var card_dim = {
 
 var cards = {
     cards_x: [], // holds x values for all cards
-    cards_y: []  // holds y values for all cards
+    cards_y: [],  // holds y values for all cards
+    cards_col: [], // holds the colors for all cards
+    render_index: [] // tells in which order each cards is rendered.
 };
 
 var card_info = {
-    face_up: [],   // tells you which cards that are being rendered are face up
-    place_pos: [], // tells which positions are legal for placement.
-    click_pos: []  // tells which positions can be clicked.
+    face_up: [],  // tells you which cards are face up in the stacks
+    place_pos: [] // tells which positions are legal for placement.
 };
 
 var stack_info = {
@@ -77,8 +79,12 @@ var stack_info = {
 var render_info = {
     render_vertices_x: [], // holds the x position of cards being rendered
     render_vertices_y: [], // holds the y position of cards being rendered
-    render_colors: []    // holds the colors of all cards.
+    render_colors: [],    // holds the colors of all rendered cards.
 };
+
+var debug = {
+    index: []
+}
 
 function render()
 {
@@ -109,12 +115,12 @@ function render()
     for ( var i = 0; i < render_info.render_colors.length; ++i )
     {
         var tmp = [
-            render_info.render_colors[ i % 6 ],
-            render_info.render_colors[ i % 6 ],
-            render_info.render_colors[ i % 6 ],
-            render_info.render_colors[ i % 6 ],
-            render_info.render_colors[ i % 6 ],
-            render_info.render_colors[ i % 6 ]
+            render_info.render_colors[ i ],
+            render_info.render_colors[ i ],
+            render_info.render_colors[ i ],
+            render_info.render_colors[ i ],
+            render_info.render_colors[ i ],
+            render_info.render_colors[ i ]
         ];
         gl.bufferSubData( gl.ARRAY_BUFFER, 96 * i, flatten( tmp ) );
     }
@@ -168,10 +174,7 @@ function init()
     init_deck();
     init_cards();
     init_render();
-
-    card_info.face_up = []; 
-    card_info.place_pos = []; 
-    card_info.click_pos = []; 
+    init_info();
 }
 
 function init_deck()
@@ -191,10 +194,7 @@ function init_deck()
         deck[ i ] = deck[ index ];
         deck[ index ] = tmp;
     }
-}
 
-function init_cards()
-{
     // Initalize stacks. 7 stacks with 1-2-3-4-5-6-7 cards.
     for ( var i = 0; i < 7; ++i )
     {
@@ -203,46 +203,77 @@ function init_cards()
             stack_info.stacks[ i ].push( deck.pop() );
         }
     }
+}
+
+function init_cards()
+{
+    // Initialize the stack's starting positions.
+    for ( var i = 0; i < 7; ++i )
+    {
+        var x = -0.9 + ( card_dim.width + card_dim.offset ) * i;
+        stack_info.stack_pos.push( vec2( x, 0.481 ) )
+    }
 
     // Init the card positions in the deck's initial position.
     for ( var i = 0; i < 52; ++i )
     {
-        cards.cards_x[ i ] = -card_dim.offset;
-        cards.cards_y[ i ] = card_dim.offset;
+        cards.cards_x[ i ] = deck_pos[ 0 ];
+        cards.cards_y[ i ] = deck_pos[ 1 ]
     }
 
     // Initialize each card's position in the stacks.
-    var x_off = -card_dim.offset + card_dim.width * i;
     for ( var i = 0; i < 7; ++i )
     {
         for ( var k = 0; k < i + 1; ++k )
         {
-            cards.cards_x[ stack_info.stacks[ i ] ] = x_off;
-            cards.cards_y[ stack_info.stacks[ i ] ] = 0.481 - ( card_dim.offset * k );
+            cards.cards_x[ stack_info.stacks[ i ][ k ] ] = stack_info.stack_pos[ i ][ 0 ];
+            cards.cards_y[ stack_info.stacks[ i ][ k ] ] = stack_info.stack_pos[ i ][ 1 ] - card_dim.offset * k;
         }
+    }
+
+    for ( var i = 0; i < 52; ++i )
+    {
+        cards.cards_col.push( colors[ i % 6 ] );
+    }
+
+    // Initialize the render index of all cards to -1 ( not rendered )
+    for ( var i = 0; i < 52; ++i )
+    {
+        cards.render_index.push( -1 );
     }
 }
 
 function init_render()
 {
-    render_info.render_vertices_x = []; 
-    render_info.render_vertices_y = []; 
-
     for ( var i = 0; i < 7; ++i )
     {
         for ( var k = 0; k < i + 1; ++k )
         {
-            render_info.render_vertices_x.push( cards.cards_x[ stack_info.stacks[ i ][ k ] ] );
-            render_info.render_vertices_y.push( cards.cards_y[ stack_info.stacks[ i ][ k ] ] );
+            var index =  stack_info.stacks[ i ][ k ];
+            cards.render_index[ index ] = render_info.render_vertices_x.length;
+            render_info.render_vertices_x.push( cards.cards_x[ index ] );
+            render_info.render_vertices_y.push( cards.cards_y[ index ] );
+            render_info.render_colors.push( cards.cards_col[ index ] );
         }
     }
 
-    render_info.render_colors = [];
+    render_info.render_vertices_x.push( cards.cards_x[ deck.length - 1 ] );
+    render_info.render_vertices_y.push( cards.cards_y[ deck.length - 1 ] );
+    render_info.render_colors.push( cards.cards_col[ deck.length - 1 ] );
+}
 
-    for ( var i = 0; i < render_info.render_vertices_y; ++i )
+// Initialize starting information on what can and can't be clicked, etc.
+function init_info()
+{
+    // Initialize the array that tells which cards are "face-up"
+    for ( var i = 0; i < 7; ++i )
     {
-        render_info.render_colors.push( colors[ i % 6 ] );
+        card_info.face_up.push( stack_info.stacks[ i ][ stack_info.stacks[ i ].length - 1 ] );
     }
+
+    // Initialize the array that tells where a certain card can be placed, but only populate it when
+    // a card is selected.
+    card_info.place_pos = []; 
 }
 
 window.onload = function()
