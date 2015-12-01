@@ -35,11 +35,6 @@ var program;
 var verticesBuffer;
 var verticesColorBuffer;
 
-var drag = false;
-var selected = false;
-
-var oldX, oldY;
-
 var deck = []; // holds index for all cards.
 var deck_pos = vec2( -0.98, 0.98 );
 
@@ -55,7 +50,7 @@ var colors = [
 var card_dim = {
     width: 0.15,
     height: 0.4,
-    offset: 0.15
+    offset: 0.11
 };
 
 var cards = {
@@ -81,6 +76,13 @@ var render_info = {
     render_vertices_y: [], // holds the y position of cards being rendered
     render_colors: [],    // holds the colors of all rendered cards.
 };
+
+var mouse = {
+    drag: false,
+    selected: false,
+    selected_cards: []
+}
+
 
 var debug = {
     index: []
@@ -131,11 +133,67 @@ function render()
 function mouseDown( e )
 {
     // Tell the program that the mouse is pressing down.
-    drag = true;
+    mouse.drag = true;
     
     // Get current position of the mouse in terms of WebGL.
     var currX = 2 * e.clientX / canvas.width - 1;
     var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
+
+    // Determine what the mouse is clicking on. Narrow by y-coord.
+    // currY > deck_pos[1] (y) means either deck or finished stacks.
+    if ( currY > deck_pos[ 1 ] - card_dim.height )
+    {
+
+    }
+    else // one of the main stacks
+    {
+        // find index of stack being clicked. -1 means no stack is clicked.
+        var x_index = -1;
+
+        for ( var i = 0; i < 7; ++i )
+        {
+            if ( currX >= stack_info.stack_pos[ i ][ 0 ] &&
+                 currX <= stack_info.stack_pos[ i ][ 0 ] + card_dim.width )
+            {
+                x_index = i;
+            }
+        }
+
+        // No stack clicked. Exit.
+        if ( x_index == -1 )
+        {
+            return;
+        }
+
+        var stack = stack_info.stack_pos[ x_index ];
+
+        // Find y-index of card being clicked. Only count it as selected if
+        // the card is face-up
+        var y_index = -1;
+        for ( var i = 0; i < stack.length; ++i )
+        {
+            var diff = ( i == stack.length - 1 ) ? card_dim.height : offset;
+            if ( card_info.face_up[ stack[ i ] ] &&
+                 currY > cards.cards_y[ stack[ i ] ] - diff &&
+                 currY <= cards.cards_y[ stack[ i ] ] )
+            {
+                var y_index = i;
+            }
+        }
+
+        if ( y_index == -1 )
+        {
+            return;
+        }
+
+        var limit = stack_info.stacks[ x_index ].length;
+        for ( var i = y_index; 
+              i < limit; 
+              ++i )
+        {
+            mouse.selected_cards.push( stack_info.stacks[ x_index ].pop() );
+        }
+    }
 }
 
 //NOTE: 0 - 6 are field stacks, 7 is draw deck, 8 - 11 are the finish stacks
@@ -266,9 +324,14 @@ function init_render()
 function init_info()
 {
     // Initialize the array that tells which cards are "face-up"
+    for ( var i = 0; i < 52; ++i )
+    {
+        card_info.face_up.push( 0 );
+    }
+
     for ( var i = 0; i < 7; ++i )
     {
-        card_info.face_up.push( stack_info.stacks[ i ][ stack_info.stacks[ i ].length - 1 ] );
+        card_info.face_up[ stack_info.stacks[ i ][ stack_info.stacks[ i ].length - 1 ] ] = 1;
     }
 
     // Initialize the array that tells where a certain card can be placed, but only populate it when
