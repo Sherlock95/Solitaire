@@ -60,11 +60,6 @@ var cards = {
     render_index: [] // tells in which order each cards is rendered.
 };
 
-var card_info = {
-    face_up: [],  // tells you which cards are face up in the stacks
-    place_pos: [] // tells which positions are legal for placement.
-};
-
 var stack_info = {
     stacks: [ [], [], [], [], [], [], 
               [], [], [], [], [], [] ], // holds the index of cards in stacks.
@@ -79,6 +74,8 @@ var render_info = {
 
 var mouse = {
     drag: false,
+    oldX: -1,
+    oldY: -1,
     selected: false,
     selected_cards: []
 }
@@ -143,7 +140,51 @@ function mouseDown( e )
     // currY > deck_pos[1] (y) means either deck or finished stacks.
     if ( currY > deck_pos[ 1 ] - card_dim.height )
     {
+        if ( currX <= deck_pos[ 0 ] + card_dim.width &&
+             currX > deck_pos[ 0 ] )
+        {
+            if ( deck.length == 0 ) {
+                while ( stack_info.stacks[ 7 ].length > 0 )
+                {
+                    deck.push( stack_info.stacks[ 7 ].pop() );
+                } 
+            }
 
+            var card = deck.pop();
+            if ( stack_info.stacks[ 7 ].length > 0 )
+            {
+                var prev_card = stack_info.stacks[ 7 ][ stack_info.stacks[ 7 ].length - 1 ];
+                var prev_card_ind = cards.render_index[ stack_info.stacks[ 7 ][ stack_info.stacks[ 7 ].length - 1 ] ];
+                render_info.render_vertices_x.splice( prev_card_ind, 1 );
+                render_info.render_vertices_y.splice( prev_card_ind, 1 );
+                render_info.render_colors.splice( prev_card_ind, 1 );
+                
+                cards.render_index[ prev_card ] = -1;
+            }
+
+            cards.cards_x[ card ] = stack_info.stack_pos[ 7 ][ 0 ];
+            cards.cards_y[ card ] = stack_info.stack_pos[ 7 ][ 1 ];
+            cards.render_index[ card ] = render_info.render_vertices_x.length;
+
+            render_info.render_vertices_x.push( cards.cards_x[ card ] );
+            render_info.render_vertices_y.push( cards.cards_y[ card ] );
+            render_info.render_colors.push( cards.cards_col[ card ] );
+
+            stack_info.stacks[ 7 ].push( card );
+
+            return;
+        }
+        else if ( currX <= stack_info.stack_pos[ 7 ][ 0 ] + card_dim.width &&
+                  currX > stack_info.stack_pos[ 7 ][ 0 ] )
+        {
+            // the drawn stack
+        }
+        else
+        {
+            // one of the finish stacks.
+        }
+
+        return;
     }
     else // one of the main stacks
     {
@@ -165,16 +206,14 @@ function mouseDown( e )
             return;
         }
 
-        var stack = stack_info.stack_pos[ x_index ];
 
         // Find y-index of card being clicked. Only count it as selected if
         // the card is face-up
+        var stack = stack_info.stacks[ x_index ];
         var y_index = -1;
         for ( var i = 0; i < stack.length; ++i )
         {
-            var diff = ( i == stack.length - 1 ) ? card_dim.height : offset;
-            if ( card_info.face_up[ stack[ i ] ] &&
-                 currY > cards.cards_y[ stack[ i ] ] - diff &&
+            if ( currY > cards.cards_y[ stack[ i ] ] - card_dim.height &&
                  currY <= cards.cards_y[ stack[ i ] ] )
             {
                 var y_index = i;
@@ -191,24 +230,139 @@ function mouseDown( e )
               i < limit; 
               ++i )
         {
-            mouse.selected_cards.push( stack_info.stacks[ x_index ].pop() );
+            mouse.selected_cards.push( stack_info.stacks[ x_index ][ y_index ] );
+            stack_info.stacks[ x_index ].splice( y_index, 1 );
         }
+
+        mouse.oldX = x_index;
+        mouse.oldY = y_index;
     }
 }
 
 //NOTE: 0 - 6 are field stacks, 7 is draw deck, 8 - 11 are the finish stacks
 function mouseUp( e )
 {
-    drag = false;
+    mouse.drag = false;
 
     // Get current position of the mouse in terms of WebGL.
     var currX = 2 * e.clientX / canvas.width - 1;
     var currY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
+
+    if ( mouse.selected_cards.length > 0 )
+    {
+        if ( currY > stack_info.stack_pos[ 0 ][ 1 ] )
+        {
+            if ( mouse.selected_cards.length == 1 )
+            {
+                var index = -1;
+                for ( var i = 8; i < stack_info.stacks.length; ++i )
+                {
+                    if ( currX < stack_info.stack_pos[ i ][ 0 ] + card_dim.width &&
+                         currX >= stack_info.stack_pos[ i ][ 0 ] )
+                    {
+                        index = i;
+                    }
+                }
+
+                if ( index == -1 )
+                {
+                    var card = mouse.selected_cards[ 0 ];
+                    stack_info.stacks[ mouse.oldX ].push( mouse.selected_cards.splice( 0, 1 ) );
+                    cards.cards_x[ card ] = stack_info.stack_pos[ mouse.oldX ][ 0 ];
+                    cards.cards_y[ card ] = stack_info.stack_pos[ mouse.oldX ][ 1 ] - 
+                        ( card_dim.offset * stack_info.stacks[ mouse.oldX ].length - 1 )
+
+                    render_info.render_vertices_x[ cards.render_index[ card ] ] = cards.cards_x[ card ];
+                    render_info.render_vertices_y[ cards.render_index[ card ] ] = cards.cards_y[ card ];
+                }
+
+                return;
+            }
+            
+            while ( mouse.selected_cards.length > 0 )
+            {
+                var card = mouse.selected_cards.splice( 0, 1 );
+                stack_info.stacks[ mouse.oldX ].push( card );
+                cards.cards_x[ card ] = stack_info.stack_pos[ mouse.oldX ][ 0 ];
+                cards.cards_y[ card ] = stack_info.stack_pos[ mouse.oldX ][ 1 ] - ( card_dim.offset * ( stack_info.stacks[ mouse.oldX ].length - 1 ) );
+
+                render_info.render_vertices_x[ cards.render_index[ card ] ] = cards.cards_x[ card ];
+                render_info.render_vertices_y[ cards.render_index[ card ] ] = cards.cards_y[ card ];
+            }
+
+            return;
+        }
+        else
+        {
+            var index = -1;
+            for ( var i = 0; i < 7; ++i )
+            {
+                if ( currX < stack_info.stack_pos[ i ][ 0 ] + card_dim.width &&
+                     currX >= stack_info.stack_pos[ i ][ 0 ] )
+                {
+                    index = i;
+                }
+            }
+
+            if ( index == -1 || index == mouse.oldX )
+            {
+                while ( mouse.selected_cards.length > 0 )
+                {
+                    var card = mouse.selected_cards.splice( 0, 1 );
+                    stack_info.stacks[ mouse.oldX ].push( card );
+                    cards.cards_x[ card ] = stack_info.stack_pos[ mouse.oldX ][ 0 ];
+                    cards.cards_y[ card ] = stack_info.stack_pos[ mouse.oldX ][ 1 ] - ( card_dim.offset * ( stack_info.stacks[ mouse.oldX ].length - 1 ) );
+
+                    render_info.render_vertices_x[ cards.render_index[ card ] ] = cards.cards_x[ card ];
+                    render_info.render_vertices_y[ cards.render_index[ card ] ] = cards.cards_y[ card ];
+                }
+
+                return;
+            }
+
+            var comp_card = stack_info.stacks[ index ][ stack_info.stacks[ index ].length - 1 ];
+            var curr_card = mouse.selected_cards[ 0 ];
+            var comp_card_col = ( comp_card % 2 );
+            var curr_card_col = ( curr_card % 2 );
+            var comp_card_num = Math.floor( comp_card / 4 );
+            var curr_card_num = Math.floor( curr_card / 4 );
+
+            if ( ( comp_card_col != curr_card_col ) &&
+                 ( comp_card_num == curr_card_num + 1 ) )
+            {
+                while ( mouse.selected_cards.length > 0 )
+                {
+                    var card = mouse.selected_cards.splice( 0, 1 );
+                    stack_info.stacks[ index ].push( card );
+                    cards.cards_x[ card ] = stack_info.stack_pos[ index ][ 0 ];
+                    cards.cards_y[ card ] = stack_info.stack_pos[ index ][ 1 ] - ( card_dim.offset * ( stack_info.stacks[ index ].length - 1 ) );
+
+                    render_info.render_vertices_x[ cards.render_index[ card ] ] = cards.cards_x[ card ];
+                    render_info.render_vertices_y[ cards.render_index[ card ] ] = cards.cards_y[ card ];
+                }
+            }
+            else
+            {
+                while ( mouse.selected_cards.length > 0 )
+                {
+                    var card = mouse.selected_cards.splice( 0, 1 );
+                    stack_info.stacks[ mouse.oldX ].push( card );
+                    cards.cards_x[ card ] = stack_info.stack_pos[ mouse.oldX ][ 0 ];
+                    cards.cards_y[ card ] = stack_info.stack_pos[ mouse.oldX ][ 1 ] - ( card_dim.offset * ( stack_info.stacks[ mouse.oldX ].length - 1 ) );
+
+                    render_info.render_vertices_x[ cards.render_index[ card ] ] = cards.cards_x[ card ];
+                    render_info.render_vertices_y[ cards.render_index[ card ] ] = cards.cards_y[ card ];
+                }
+
+                return;
+            }
+        }
+    }
 }
 
 function mouseMove( e )
 {
-    if ( !drag )
+    if ( !mouse.drag )
     {
         return;
     }
@@ -216,10 +370,10 @@ function mouseMove( e )
     newX = 2 * e.clientX / canvas.width - 1;
     newY = 2 * ( canvas.height - e.clientY ) / canvas.height - 1;
 
-    for ( var i = 0; i < selectedCards.length; ++i )
+    for ( var i = 0; i < mouse.selected_cards.length; ++i )
     {
-        cardVertices[ selectedCards[ i ] ][ 0 ] = newX - card_dim.width / 2;
-        cardVertices[ selectedCards[ i ] ][ 1 ] = newY - ( card_dim.offset * i );
+        render_info.render_vertices_x[ cards.render_index[ mouse.selected_cards[ i ] ] ] = newX - card_dim.width / 2;
+        render_info.render_vertices_y[ cards.render_index[ mouse.selected_cards[ i ] ] ] = newY - card_dim.offset * i;
     }
 }
 
@@ -232,7 +386,6 @@ function init()
     init_deck();
     init_cards();
     init_render();
-    init_info();
 }
 
 function init_deck()
@@ -270,6 +423,13 @@ function init_cards()
     {
         var x = -0.9 + ( card_dim.width + card_dim.offset ) * i;
         stack_info.stack_pos.push( vec2( x, 0.481 ) )
+    }
+
+    // Initialize final stacks.
+    stack_info.stack_pos.push( vec2( deck_pos[ 0 ] + card_dim.width + card_dim.offset, deck_pos[ 1 ] ) );
+    for ( var i = 0; i < 4; ++i )
+    {
+        stack_info.stack_pos.push( vec2( 0.0 + ( ( card_dim.offset + card_dim.width ) * i ), deck_pos[ 1 ] ) );
     }
 
     // Init the card positions in the deck's initial position.
@@ -315,28 +475,9 @@ function init_render()
         }
     }
 
-    render_info.render_vertices_x.push( cards.cards_x[ deck.length - 1 ] );
-    render_info.render_vertices_y.push( cards.cards_y[ deck.length - 1 ] );
-    render_info.render_colors.push( cards.cards_col[ deck.length - 1 ] );
-}
-
-// Initialize starting information on what can and can't be clicked, etc.
-function init_info()
-{
-    // Initialize the array that tells which cards are "face-up"
-    for ( var i = 0; i < 52; ++i )
-    {
-        card_info.face_up.push( 0 );
-    }
-
-    for ( var i = 0; i < 7; ++i )
-    {
-        card_info.face_up[ stack_info.stacks[ i ][ stack_info.stacks[ i ].length - 1 ] ] = 1;
-    }
-
-    // Initialize the array that tells where a certain card can be placed, but only populate it when
-    // a card is selected.
-    card_info.place_pos = []; 
+    render_info.render_vertices_x.push( cards.cards_x[ deck[ deck.length - 1 ] ] );
+    render_info.render_vertices_y.push( cards.cards_y[ deck[ deck.length - 1 ] ] );
+    render_info.render_colors.push( cards.cards_col[ deck[ deck.length - 1 ] ] );
 }
 
 window.onload = function()
