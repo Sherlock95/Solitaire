@@ -29,6 +29,26 @@
             }
         </script>
 
+        <style>
+            #authorship {
+                width: 100%;
+                display: block;
+            }
+
+            #title {
+                width: 100%;
+                font-weight: bold;
+                font-size: 16pt;
+                font-family: sans-serif;
+            }
+
+            #title {
+                width: 100%;
+                font-size: 14pt;
+                font-family: sans-serif;
+            }
+        </style>
+
         <script type="text/javascript" src="Common/webgl-utils.js"></script>
         <script type="text/javascript" src="Common/initShaders.js"></script>
         <script type="text/javascript" src="Common/MV.js"></script>
@@ -38,6 +58,17 @@
     </head>
 
     <body>
+        <div id='authorship'>
+            <span id='title'>
+                Solitaire with Colors by Jarrett Locke
+            </span>
+            <span id='description'>
+                This is a game of solitaire created but not finished. Each card has its own individual value and there is some logic to the main 7 rows of
+                cards. Each card has its own color, but no card's color is unique. The draw deck can be cycled through, but you cannot select a card from
+                the deck to play. The 4 finish stacks are there, but they are not outlined nor are they useable. The logic of "this is a 9" and "this is red"
+                is there and finding out which suite it is in is possible, but you can't see them. Enjoy! :)
+            </span>
+        </div>
         <canvas id="gl-canvas" width="1280" height="720">
             Oops ... your browser doesn't support the HTML5 canvas element
         </canvas>
